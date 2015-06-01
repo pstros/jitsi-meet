@@ -210,9 +210,47 @@ function RTCUtils(RTCService)
                 return this.audioTracks;
             };
         }
-    }
-    else
-    {
+    } else if (window.rtcninja) {
+      console.log('This appears to be an rtcninja platform');
+      if (!rtcninja.called) {
+        var rtcninjaOptions = {};
+        if (window.cordova && window.cordova.plugins && window.cordova.plugins.iosrtc && window.cordova.plugins.iosrtc.rtcninjaPlugin) {
+          rtcninjaOptions = {plugin: cordova.plugins.iosrtc.rtcninjaPlugin};
+        }
+        rtcninja(options);
+      }
+      if (rtcninja.hasWebRTC()) {
+        this.peerconnection = rtcninja.RTCPeerConnection;
+        this.browser = RTCBrowserType.RTC_BROWSER_FIREFOX;
+        this.getUserMedia = rtcninja.getUserMedia;
+        RTCSessionDescription = rtcninja.RTCSessionDescription;
+        RTCIceCandidate = rtcninja.RTCIceCandidate;
+        this.attachMediaStream = rtcninja.attachMediaStream;
+        this.pc_constraints = {};
+        this.getStreamID = function (stream) {
+          // streams from FF endpoints have the characters '{' and '}'
+          // that make jQuery choke.
+          if (stream.id) {
+            return stream.id.replace(/[\{,\}]/g, "");
+          }
+          var tracks = stream.getVideoTracks();
+          if (!tracks || tracks.length == 0) {
+            tracks = stream.getAudioTracks();
+          }
+          return tracks[0].id.replace(/[\{,\}]/g, "");
+        };
+        this.getVideoSrc = function (element) {
+          if (!element)
+            return null;
+          return element.getAttribute("src");
+        };
+        this.setVideoSrc = function (element, src) {
+          if (element) {
+            element.setAttribute("src", src);
+          }
+        };
+      }
+    } else {
         try { console.log('Browser does not appear to be WebRTC-capable'); } catch (e) { }
 
         window.location.href = 'unsupported_browser.html';

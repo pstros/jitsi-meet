@@ -1,7 +1,8 @@
+var RTCUtils = require("../RTC/RTCUtils.js");
 function TraceablePeerConnection(ice_config, constraints) {
     var self = this;
-    var RTCPeerconnection = navigator.mozGetUserMedia ? mozRTCPeerConnection : webkitRTCPeerConnection;
-    this.peerconnection = new RTCPeerconnection(ice_config, constraints);
+    var rtcUtils = new RTCUtils(this);
+    this.peerconnection = new rtcUtils.peerconnection(ice_config, constraints);
     this.updateLog = [];
     this.stats = {};
     this.statsinterval = null;
