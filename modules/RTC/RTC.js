@@ -49,12 +49,8 @@ var RTC = {
     },
     localStreams: [],
     remoteStreams: {},
-    localAudio: {
-      isMuted: function() {return true}
-    },
-    localVideo: {
-      isMuted: function() {return true}
-    },
+    localAudio: null,
+    localVideo: null,
     addStreamListener: function (listener, eventType) {
         eventEmitter.on(eventType, listener);
     },

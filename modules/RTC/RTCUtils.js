@@ -221,8 +221,8 @@ function RTCUtils(RTCService)
       }
       if (rtcninja.hasWebRTC()) {
         this.peerconnection = rtcninja.RTCPeerConnection;
-        this.browser = RTCBrowserType.RTC_BROWSER_FIREFOX;
-        this.getUserMedia = rtcninja.getUserMedia;
+        this.browser = RTCBrowserType.RTC_BROWSER_RTCNINJA;
+        this.getUserMedia = rtcninja.getUserMedia.bind(navigator);
         RTCSessionDescription = rtcninja.RTCSessionDescription;
         RTCIceCandidate = rtcninja.RTCIceCandidate;
         this.attachMediaStream = rtcninja.attachMediaStream;
@@ -230,14 +230,10 @@ function RTCUtils(RTCService)
         this.getStreamID = function (stream) {
           // streams from FF endpoints have the characters '{' and '}'
           // that make jQuery choke.
+          // Copied from Chrome above, Safari has Chrome style streams
           if (stream.id) {
             return stream.id.replace(/[\{,\}]/g, "");
           }
-          var tracks = stream.getVideoTracks();
-          if (!tracks || tracks.length == 0) {
-            tracks = stream.getAudioTracks();
-          }
-          return tracks[0].id.replace(/[\{,\}]/g, "");
         };
         this.getVideoSrc = function (element) {
           if (!element)
@@ -252,7 +248,6 @@ function RTCUtils(RTCService)
       }
     } else {
         try { console.log('Browser does not appear to be WebRTC-capable'); } catch (e) { }
-
         window.location.href = 'unsupported_browser.html';
         return;
     }
