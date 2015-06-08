@@ -211,7 +211,7 @@ function RTCUtils(RTCService)
             };
         }
     } else if (window.rtcninja) {
-      console.log('This appears to be an rtcninja platform');
+      try { console.log('This appears to be an rtcninja platform'); } catch (e) { }
       if (!rtcninja.called) {
         var rtcninjaOptions = {};
         if (window.cordova && window.cordova.plugins && window.cordova.plugins.iosrtc && window.cordova.plugins.iosrtc.rtcninjaPlugin) {
