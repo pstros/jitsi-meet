@@ -733,12 +733,7 @@ UI.setInitialMuteFromFocus = function (muteAudio, muteVideo) {
  * Mutes/unmutes the local video.
  */
 UI.toggleVideo = function () {
-    var newMuteState = !(APP.RTC && APP.RTC.localVideo && APP.RTC.localVideo.isMuted());
-    Analytics.sp.track('Video Mute Toggle', {
-        newState: newMuteState
-    });
-
-    setVideoMute(newMuteState);
+  setVideoMute(!(APP.RTC && APP.RTC.localVideo && APP.RTC.localVideo.isMuted()));
 };
 
 /**
