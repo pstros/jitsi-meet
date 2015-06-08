@@ -140,7 +140,7 @@ function registerListeners() {
         if(jid === APP.statistics.LOCAL_JID)
         {
             resourceJid = AudioLevels.LOCAL_LEVEL;
-            if(APP.RTC && APP.RTC.localVideo && APP.RTC.localAudio.isMuted())
+            if(APP.RTC && APP.RTC.localAudio && APP.RTC.localAudio.isMuted())
             {
                 audioLevel = 0;
             }
@@ -757,7 +757,7 @@ UI.toggleVideo = function () {
  * Mutes / unmutes audio for the local participant.
  */
 UI.toggleAudio = function() {
-    UI.setAudioMuted(!(APP.RTC && APP.RTC.localVideo && APP.RTC.localAudio.isMuted()));
+    UI.setAudioMuted(!(APP.RTC && APP.RTC.localAudio && APP.RTC.localAudio.isMuted()));
 };
 
 /**
