@@ -225,7 +225,11 @@ function RTCUtils(RTCService)
         this.getUserMedia = rtcninja.getUserMedia.bind(navigator);
         RTCSessionDescription = rtcninja.RTCSessionDescription;
         RTCIceCandidate = rtcninja.RTCIceCandidate;
-        this.attachMediaStream = rtcninja.attachMediaStream;
+        this.attachMediaStream = function(element, stream) {
+          if(!element[0])
+            return;
+          rtcninja.attachMediaStream(element[0], stream);
+        }
         this.pc_constraints = {};
         this.getStreamID = function (stream) {
           // streams from FF endpoints have the characters '{' and '}'
@@ -466,8 +470,7 @@ RTCUtils.prototype.handleLocalStream = function(stream, usageOptions)
     // If this is FF, the stream parameter is *not* a MediaStream object, it's
     // an object with two properties: audioStream, videoStream.
     var audioStream, videoStream;
-    if(window.webkitMediaStream)
-    {
+    if(this.browser === RTCBrowserType.RTC_BROWSER_CHROME) {
         audioStream = new webkitMediaStream();
         videoStream = new webkitMediaStream();
         if(stream) {
@@ -483,11 +486,17 @@ RTCUtils.prototype.handleLocalStream = function(stream, usageOptions)
                 videoStream.addTrack(videoTracks[i]);
             }
         }
-    }
-    else
-    {//firefox
+    } else if(this.browser === RTCBrowserType.RTC_BROWSER_RTCNINJA) {
+      if(stream) {
+        audioStream = stream;
+        videoStream = stream;
+      }
+    } else {
+      //firefox
+      if(stream) {
         audioStream = stream.audioStream;
         videoStream = stream.videoStream;
+      }
     }
 
     var audioMuted = (usageOptions && usageOptions.audio === false),
