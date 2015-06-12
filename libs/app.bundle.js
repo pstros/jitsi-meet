@@ -10,7 +10,6 @@ var APP =
         this.connectionquality = require("./modules/connectionquality/connectionquality");
         this.statistics = require("./modules/statistics/statistics");
         this.RTC = require("./modules/RTC/RTC");
-        this.simulcast = require("./modules/simulcast/simulcast");
         this.desktopsharing = require("./modules/desktopsharing/desktopsharing");
         this.xmpp = require("./modules/xmpp/xmpp");
         this.keyboardshortcut = require("./modules/keyboardshortcut/keyboardshortcut");
@@ -59,7 +58,7 @@ $(window).bind('beforeunload', function () {
 module.exports = APP;
 
 
-},{"./modules/API/API":2,"./modules/DTMF/DTMF":3,"./modules/RTC/RTC":7,"./modules/UI/UI":9,"./modules/URLProcessor/URLProcessor":36,"./modules/connectionquality/connectionquality":37,"./modules/desktopsharing/desktopsharing":38,"./modules/keyboardshortcut/keyboardshortcut":39,"./modules/members/MemberList":40,"./modules/settings/Settings":41,"./modules/simulcast/simulcast":46,"./modules/statistics/statistics":49,"./modules/translation/translation":50,"./modules/xmpp/xmpp":64}],2:[function(require,module,exports){
+},{"./modules/API/API":2,"./modules/DTMF/DTMF":3,"./modules/RTC/RTC":7,"./modules/UI/UI":9,"./modules/URLProcessor/URLProcessor":36,"./modules/connectionquality/connectionquality":37,"./modules/desktopsharing/desktopsharing":38,"./modules/keyboardshortcut/keyboardshortcut":39,"./modules/members/MemberList":40,"./modules/settings/Settings":41,"./modules/statistics/statistics":44,"./modules/translation/translation":45,"./modules/xmpp/xmpp":59}],2:[function(require,module,exports){
 /**
  * Implements API class that communicates with external api class
  * and provides interface to access Jitsi Meet features by external
@@ -291,7 +290,7 @@ var API = {
 };
 
 module.exports = API;
-},{"../../service/xmpp/XMPPEvents":107}],3:[function(require,module,exports){
+},{"../../service/xmpp/XMPPEvents":104}],3:[function(require,module,exports){
 /* global APP */
 
 /**
@@ -455,24 +454,6 @@ var DataChannels =
                     eventEmitter.emit(RTCEvents.LASTN_ENDPOINT_CHANGED,
                         lastNEndpoints, endpointsEnteringLastN, obj);
                 }
-                else if ("SimulcastLayersChangedEvent" === colibriClass)
-                {
-                    eventEmitter.emit(RTCEvents.SIMULCAST_LAYER_CHANGED,
-                        obj.endpointSimulcastLayers);
-                }
-                else if ("SimulcastLayersChangingEvent" === colibriClass)
-                {
-                    eventEmitter.emit(RTCEvents.SIMULCAST_LAYER_CHANGING,
-                        obj.endpointSimulcastLayers);
-                }
-                else if ("StartSimulcastLayerEvent" === colibriClass)
-                {
-                    eventEmitter.emit(RTCEvents.SIMULCAST_START, obj.simulcastLayer);
-                }
-                else if ("StopSimulcastLayerEvent" === colibriClass)
-                {
-                    eventEmitter.emit(RTCEvents.SIMULCAST_STOP, obj.simulcastLayer);
-                }
                 else
                 {
                     console.debug("Data channel JSON-formatted message: ", obj);
@@ -576,7 +557,7 @@ function onPinnedEndpointChanged(userResource)
 module.exports = DataChannels;
 
 
-},{"../../service/RTC/RTCEvents":98}],5:[function(require,module,exports){
+},{"../../service/RTC/RTCEvents":95}],5:[function(require,module,exports){
 var StreamEventTypes = require("../../service/RTC/StreamEventTypes.js");
 
 
@@ -684,7 +665,7 @@ LocalStream.prototype.getId = function () {
 
 module.exports = LocalStream;
 
-},{"../../service/RTC/StreamEventTypes.js":100}],6:[function(require,module,exports){
+},{"../../service/RTC/StreamEventTypes.js":97}],6:[function(require,module,exports){
 ////These lines should be uncommented when require works in app.js
 var MediaStreamType = require("../../service/RTC/MediaStreamTypes");
 var StreamEventType = require("../../service/RTC/StreamEventTypes");
@@ -746,7 +727,7 @@ MediaStream.prototype.setVideoType = function (value) {
 
 module.exports = MediaStream;
 
-},{"../../service/RTC/MediaStreamTypes":96,"../../service/RTC/StreamEventTypes":100}],7:[function(require,module,exports){
+},{"../../service/RTC/MediaStreamTypes":93,"../../service/RTC/StreamEventTypes":97}],7:[function(require,module,exports){
 var EventEmitter = require("events");
 var RTCUtils = require("./RTCUtils.js");
 var LocalStream = require("./LocalStream.js");
@@ -1032,7 +1013,7 @@ var RTC = {
 
 module.exports = RTC;
 
-},{"../../service/RTC/MediaStreamTypes":96,"../../service/RTC/RTCEvents.js":98,"../../service/RTC/StreamEventTypes.js":100,"../../service/UI/UIEvents":101,"../../service/desktopsharing/DesktopSharingEventTypes":104,"../../service/xmpp/XMPPEvents":107,"./DataChannels":4,"./LocalStream.js":5,"./MediaStream.js":6,"./RTCUtils.js":8,"events":66}],8:[function(require,module,exports){
+},{"../../service/RTC/MediaStreamTypes":93,"../../service/RTC/RTCEvents.js":95,"../../service/RTC/StreamEventTypes.js":97,"../../service/UI/UIEvents":98,"../../service/desktopsharing/DesktopSharingEventTypes":101,"../../service/xmpp/XMPPEvents":104,"./DataChannels":4,"./LocalStream.js":5,"./MediaStream.js":6,"./RTCUtils.js":8,"events":62}],8:[function(require,module,exports){
 var RTCBrowserType = require("../../service/RTC/RTCBrowserType.js");
 var Resolutions = require("../../service/RTC/Resolutions");
 
@@ -1166,7 +1147,7 @@ function RTCUtils(RTCService)
         console.log('This appears to be Firefox');
         var version = parseInt(navigator.userAgent.match(/Firefox\/([0-9]+)\./)[1], 10);
         if (version >= 40
-            && !config.enableSimulcast && config.useBundle && config.useRtcpMux) {
+            && config.useBundle && config.useRtcpMux) {
             this.peerconnection = mozRTCPeerConnection;
             this.browser = RTCBrowserType.RTC_BROWSER_FIREFOX;
             this.getUserMedia = navigator.mozGetUserMedia.bind(navigator);
@@ -1272,44 +1253,20 @@ RTCUtils.prototype.getUserMediaWithConstraints = function(
     var self = this;
 
     try {
-        if (config.enableSimulcast
-            && constraints.video
-            && constraints.video.chromeMediaSource !== 'screen'
-            && constraints.video.chromeMediaSource !== 'desktop'
-            && !isAndroid
-
-            // We currently do not support FF, as it doesn't have multistream support.
-            && !isFF) {
-            APP.simulcast.getUserMedia(constraints, function (stream) {
-                    console.log('onUserMediaSuccess');
-                    self.setAvailableDevices(um, true);
-                    success_callback(stream);
-                },
-                function (error) {
-                    console.warn('Failed to get access to local media. Error ', error);
-                    self.setAvailableDevices(um, false);
-                    if (failure_callback) {
-                        failure_callback(error);
-                    }
-                });
-        } else {
-
-            this.getUserMedia(constraints,
-                function (stream) {
-                    console.log('onUserMediaSuccess');
-                    self.setAvailableDevices(um, true);
-                    success_callback(stream);
-                },
-                function (error) {
-                    self.setAvailableDevices(um, false);
-                    console.warn('Failed to get access to local media. Error ',
-                        error, constraints);
-                    if (failure_callback) {
-                        failure_callback(error);
-                    }
-                });
-
-        }
+        this.getUserMedia(constraints,
+            function (stream) {
+                console.log('onUserMediaSuccess');
+                self.setAvailableDevices(um, true);
+                success_callback(stream);
+            },
+            function (error) {
+                self.setAvailableDevices(um, false);
+                console.warn('Failed to get access to local media. Error ',
+                    error, constraints);
+                if (failure_callback) {
+                    failure_callback(error);
+                }
+            });
     } catch (e) {
         console.error('GUM failed: ', e);
         if(failure_callback) {
@@ -1530,7 +1487,7 @@ RTCUtils.prototype.createStream = function(stream, isVideo)
 
 module.exports = RTCUtils;
 
-},{"../../service/RTC/RTCBrowserType.js":97,"../../service/RTC/Resolutions":99}],9:[function(require,module,exports){
+},{"../../service/RTC/RTCBrowserType.js":94,"../../service/RTC/Resolutions":96}],9:[function(require,module,exports){
 var UI = {};
 
 var VideoLayout = require("./videolayout/VideoLayout.js");
@@ -1654,14 +1611,6 @@ function registerListeners() {
         function (lastNEndpoints, endpointsEnteringLastN, stream) {
             VideoLayout.onLastNEndpointsChanged(lastNEndpoints,
                 endpointsEnteringLastN, stream);
-        });
-    APP.RTC.addListener(RTCEvents.SIMULCAST_LAYER_CHANGED,
-        function (endpointSimulcastLayers) {
-           VideoLayout.onSimulcastLayersChanged(endpointSimulcastLayers);
-        });
-    APP.RTC.addListener(RTCEvents.SIMULCAST_LAYER_CHANGING,
-        function (endpointSimulcastLayers) {
-            VideoLayout.onSimulcastLayersChanging(endpointSimulcastLayers);
         });
     APP.RTC.addListener(RTCEvents.AVAILABLE_DEVICES_CHANGED,
         function (devices) {
@@ -2355,7 +2304,7 @@ UI.setVideoMute = setVideoMute;
 module.exports = UI;
 
 
-},{"../../service/RTC/RTCEvents":98,"../../service/RTC/StreamEventTypes":100,"../../service/connectionquality/CQEvents":103,"../../service/desktopsharing/DesktopSharingEventTypes":104,"../../service/members/Events":105,"../../service/xmpp/XMPPEvents":107,"./../settings/Settings":41,"./audio_levels/AudioLevels.js":10,"./authentication/Authentication":12,"./avatar/Avatar":14,"./etherpad/Etherpad.js":15,"./prezi/Prezi.js":16,"./side_pannels/SidePanelToggler":18,"./side_pannels/chat/Chat.js":19,"./side_pannels/contactlist/ContactList":23,"./side_pannels/settings/SettingsMenu":24,"./toolbars/BottomToolbar":25,"./toolbars/Toolbar":26,"./toolbars/ToolbarToggler":27,"./util/MessageHandler":29,"./util/NicknameHandler":30,"./util/UIUtil":31,"./videolayout/VideoLayout.js":33,"./welcome_page/RoomnameGenerator":34,"./welcome_page/WelcomePage":35,"events":66}],10:[function(require,module,exports){
+},{"../../service/RTC/RTCEvents":95,"../../service/RTC/StreamEventTypes":97,"../../service/connectionquality/CQEvents":100,"../../service/desktopsharing/DesktopSharingEventTypes":101,"../../service/members/Events":102,"../../service/xmpp/XMPPEvents":104,"./../settings/Settings":41,"./audio_levels/AudioLevels.js":10,"./authentication/Authentication":12,"./avatar/Avatar":14,"./etherpad/Etherpad.js":15,"./prezi/Prezi.js":16,"./side_pannels/SidePanelToggler":18,"./side_pannels/chat/Chat.js":19,"./side_pannels/contactlist/ContactList":23,"./side_pannels/settings/SettingsMenu":24,"./toolbars/BottomToolbar":25,"./toolbars/Toolbar":26,"./toolbars/ToolbarToggler":27,"./util/MessageHandler":29,"./util/NicknameHandler":30,"./util/UIUtil":31,"./videolayout/VideoLayout.js":33,"./welcome_page/RoomnameGenerator":34,"./welcome_page/WelcomePage":35,"events":62}],10:[function(require,module,exports){
 var CanvasUtil = require("./CanvasUtils");
 
 var ASDrawContext = $('#activeSpeakerAudioLevel')[0].getContext('2d');
@@ -2858,7 +2807,7 @@ var Authentication = {
 };
 
 module.exports = Authentication;
-},{"../../xmpp/moderator":56,"./LoginDialog":13}],13:[function(require,module,exports){
+},{"../../xmpp/moderator":51,"./LoginDialog":13}],13:[function(require,module,exports){
 /* global $, APP, config*/
 
 var XMPP = require('../../xmpp/xmpp');
@@ -3087,7 +3036,7 @@ var LoginDialog = {
 };
 
 module.exports = LoginDialog;
-},{"../../xmpp/moderator":56,"../../xmpp/xmpp":64}],14:[function(require,module,exports){
+},{"../../xmpp/moderator":51,"../../xmpp/xmpp":59}],14:[function(require,module,exports){
 var Settings = require("../../settings/Settings");
 var MediaStreamType = require("../../../service/RTC/MediaStreamTypes");
 
@@ -3250,7 +3199,7 @@ var Avatar = {
 
 
 module.exports = Avatar;
-},{"../../../service/RTC/MediaStreamTypes":96,"../../settings/Settings":41,"../videolayout/VideoLayout":33}],15:[function(require,module,exports){
+},{"../../../service/RTC/MediaStreamTypes":93,"../../settings/Settings":41,"../videolayout/VideoLayout":33}],15:[function(require,module,exports){
 /* global $, config,
    setLargeVideoVisible, Util */
 
@@ -4733,7 +4682,7 @@ var Chat = (function (my) {
     return my;
 }(Chat || {}));
 module.exports = Chat;
-},{"../../../../service/UI/UIEvents":101,"../../toolbars/ToolbarToggler":27,"../../util/NicknameHandler":30,"../../util/UIUtil":31,"../SidePanelToggler":18,"./Commands":20,"./Replacement":21,"./smileys.json":22}],20:[function(require,module,exports){
+},{"../../../../service/UI/UIEvents":98,"../../toolbars/ToolbarToggler":27,"../../util/NicknameHandler":30,"../../util/UIUtil":31,"../SidePanelToggler":18,"./Commands":20,"./Replacement":21,"./smileys.json":22}],20:[function(require,module,exports){
 var UIUtil = require("../../util/UIUtil");
 
 /**
@@ -5245,7 +5194,7 @@ var SettingsMenu = {
 
 
 module.exports = SettingsMenu;
-},{"../../../../service/translation/languages":106,"../../avatar/Avatar":14,"../../util/UIUtil":31,"./../../../settings/Settings":41}],25:[function(require,module,exports){
+},{"../../../../service/translation/languages":103,"../../avatar/Avatar":14,"../../util/UIUtil":31,"./../../../settings/Settings":41}],25:[function(require,module,exports){
 var PanelToggler = require("../side_pannels/SidePanelToggler");
 
 var buttonHandlers = {
@@ -5939,7 +5888,7 @@ var Toolbar = (function (my) {
 }(Toolbar || {}));
 
 module.exports = Toolbar;
-},{"../../../service/authentication/AuthenticationEvents":102,"../authentication/Authentication":12,"../etherpad/Etherpad":15,"../prezi/Prezi":16,"../side_pannels/SidePanelToggler":18,"../util/MessageHandler":29,"../util/UIUtil":31,"./BottomToolbar":25}],27:[function(require,module,exports){
+},{"../../../service/authentication/AuthenticationEvents":99,"../authentication/Authentication":12,"../etherpad/Etherpad":15,"../prezi/Prezi":16,"../side_pannels/SidePanelToggler":18,"../util/MessageHandler":29,"../util/UIUtil":31,"./BottomToolbar":25}],27:[function(require,module,exports){
 /* global $, interfaceConfig, Moderator, DesktopStreaming.showDesktopSharingButton */
 
 var toolbarTimeoutObject,
@@ -6420,7 +6369,7 @@ var NickanameHandler = {
 };
 
 module.exports = NickanameHandler;
-},{"../../../service/UI/UIEvents":101}],31:[function(require,module,exports){
+},{"../../../service/UI/UIEvents":98}],31:[function(require,module,exports){
 /**
  * Created by hristo on 12/22/14.
  */
@@ -6601,17 +6550,9 @@ ConnectionIndicator.prototype.generateText = function () {
     if(this.resolution && this.jid != null)
     {
         var keys = Object.keys(this.resolution);
-        if(keys.length == 1)
+        for(var ssrc in this.resolution)
         {
-            for(var ssrc in this.resolution)
-            {
-                resolutionValue = this.resolution[ssrc];
-            }
-        }
-        else if(keys.length > 1)
-        {
-            var displayedSsrc = APP.simulcast.getReceivingSSRC(this.jid);
-            resolutionValue = this.resolution[displayedSsrc];
+            resolutionValue = this.resolution[ssrc];
         }
     }
 
@@ -7026,8 +6967,7 @@ function waitForRemoteVideo(selector, ssrc, stream, jid) {
     if (stream.id === 'mixedmslabel') return;
 
     if (selector[0].currentTime > 0) {
-        var videoStream = APP.simulcast.getReceivingVideoStream(stream);
-        APP.RTC.attachMediaStream(selector, videoStream); // FIXME: why do i have to do this for FF?
+        APP.RTC.attachMediaStream(selector, stream); // FIXME: why do i have to do this for FF?
         videoactive(selector);
     } else {
         setTimeout(function () {
@@ -7562,8 +7502,7 @@ var VideoLayout = (function (my) {
         }
 
         // Attach WebRTC stream
-        var videoStream = APP.simulcast.getLocalVideoStream();
-        APP.RTC.attachMediaStream(localVideoSelector, videoStream);
+        APP.RTC.attachMediaStream(localVideoSelector, stream.getOriginalStream());
 
         // Add stream ended handler
         stream.getOriginalStream().onended = function () {
@@ -7757,113 +7696,67 @@ var VideoLayout = (function (my) {
             // Screen stream is already rotated
             largeVideoState.flipX = (newSrc === localVideoSrc) && flipXLocalVideo;
 
-            var userChanged = false;
             if (largeVideoState.oldResourceJid !== largeVideoState.userResourceJid) {
-                userChanged = true;
                 // we want the notification to trigger even if userJid is undefined,
                 // or null.
                 eventEmitter.emit(UIEvents.SELECTED_ENDPOINT,
                     largeVideoState.userResourceJid);
             }
 
-            if (!largeVideoState.updateInProgress) {
-                largeVideoState.updateInProgress = true;
+            $('#largeVideo').fadeOut(300, function () {
+                Avatar.updateActiveSpeakerAvatarSrc(
+                    APP.xmpp.findJidFromResource(
+                        largeVideoState.userResourceJid));
 
-                var doUpdate = function () {
-                    Avatar.updateActiveSpeakerAvatarSrc(
-                        APP.xmpp.findJidFromResource(
-                            largeVideoState.userResourceJid));
+                APP.RTC.setVideoSrc($('#largeVideo')[0], largeVideoState.newSrc);
 
-                    if (!userChanged && largeVideoState.preload &&
-                        largeVideoState.preload !== null &&
-                        APP.RTC.getVideoSrc($(largeVideoState.preload)[0]) === newSrc)
-                    {
+                var videoTransform = document.getElementById('largeVideo')
+                    .style.webkitTransform;
 
-                        console.info('Switching to preloaded video');
-                        var attributes = $('#largeVideo').prop("attributes");
-
-                        // loop through largeVideo attributes and apply them on
-                        // preload.
-                        $.each(attributes, function () {
-                            if (this.name !== 'id' && this.name !== 'src') {
-                                largeVideoState.preload.attr(this.name, this.value);
-                            }
-                        });
-
-                        largeVideoState.preload.appendTo($('#largeVideoContainer'));
-                        $('#largeVideo').attr('id', 'previousLargeVideo');
-                        largeVideoState.preload.attr('id', 'largeVideo');
-                        $('#previousLargeVideo').remove();
-
-                        largeVideoState.preload.on('loadedmetadata', function (e) {
-                            currentVideoWidth = this.videoWidth;
-                            currentVideoHeight = this.videoHeight;
-                            VideoLayout.positionLarge(currentVideoWidth, currentVideoHeight);
-                        });
-                        largeVideoState.preload = null;
-                        largeVideoState.preload_ssrc = 0;
-                    } else {
-                        APP.RTC.setVideoSrc($('#largeVideo')[0], largeVideoState.newSrc);
-                    }
-
-                    var videoTransform = document.getElementById('largeVideo')
-                        .style.webkitTransform;
-
-                    if (largeVideoState.flipX && videoTransform !== 'scaleX(-1)') {
-                        document.getElementById('largeVideo').style.webkitTransform
-                            = "scaleX(-1)";
-                    }
-                    else if (!largeVideoState.flipX && videoTransform === 'scaleX(-1)') {
-                        document.getElementById('largeVideo').style.webkitTransform
-                            = "none";
-                    }
-
-                    // Change the way we'll be measuring and positioning large video
-
-                    VideoLayout.getVideoSize = largeVideoState.isDesktop
-                        ? getDesktopVideoSize
-                        : getCameraVideoSize;
-                    VideoLayout.getVideoPosition = largeVideoState.isDesktop
-                        ? getDesktopVideoPosition
-                        : getCameraVideoPosition;
-
-
-                    // Only if the large video is currently visible.
-                    // Disable previous dominant speaker video.
-                    if (largeVideoState.oldResourceJid) {
-                        VideoLayout.enableDominantSpeaker(
-                            largeVideoState.oldResourceJid,
-                            false);
-                    }
-
-                    // Enable new dominant speaker in the remote videos section.
-                    if (largeVideoState.userResourceJid) {
-                        VideoLayout.enableDominantSpeaker(
-                            largeVideoState.userResourceJid,
-                            true);
-                    }
-
-                    if (userChanged && largeVideoState.isVisible) {
-                        // using "this" should be ok because we're called
-                        // from within the fadeOut event.
-                        $(this).fadeIn(300);
-                    }
-
-                    if(userChanged) {
-                        Avatar.showUserAvatar(
-                            APP.xmpp.findJidFromResource(
-                                largeVideoState.oldResourceJid));
-                    }
-
-                    largeVideoState.updateInProgress = false;
-                };
-
-                if (userChanged) {
-                    $('#largeVideo').fadeOut(300, doUpdate);
-                } else {
-                    doUpdate();
+                if (largeVideoState.flipX && videoTransform !== 'scaleX(-1)') {
+                    document.getElementById('largeVideo').style.webkitTransform
+                        = "scaleX(-1)";
                 }
-            }
+                else if (!largeVideoState.flipX && videoTransform === 'scaleX(-1)') {
+                    document.getElementById('largeVideo').style.webkitTransform
+                        = "none";
+                }
+
+                // Change the way we'll be measuring and positioning large video
+
+                VideoLayout.getVideoSize = largeVideoState.isDesktop
+                    ? getDesktopVideoSize
+                    : getCameraVideoSize;
+                VideoLayout.getVideoPosition = largeVideoState.isDesktop
+                    ? getDesktopVideoPosition
+                    : getCameraVideoPosition;
+
+
+                // Only if the large video is currently visible.
+                // Disable previous dominant speaker video.
+                if (largeVideoState.oldResourceJid) {
+                    VideoLayout.enableDominantSpeaker(
+                        largeVideoState.oldResourceJid,
+                        false);
+                }
+
+                // Enable new dominant speaker in the remote videos section.
+                if (largeVideoState.userResourceJid) {
+                    VideoLayout.enableDominantSpeaker(
+                        largeVideoState.userResourceJid,
+                        true);
+                }
+
+                if (largeVideoState.isVisible) {
+                    // using "this" should be ok because we're called
+                    // from within the fadeOut event.
+                    $(this).fadeIn(300);
+                }
+
+                Avatar.showUserAvatar(
+                    APP.xmpp.findJidFromResource(
+                        largeVideoState.oldResourceJid));
+            });
         } else {
             Avatar.showUserAvatar(
                 APP.xmpp.findJidFromResource(
@@ -8121,8 +8014,7 @@ var VideoLayout = (function (my) {
             // If the container is currently visible we attach the stream.
             if (!isVideo
                 || (container.offsetParent !== null && isVideo)) {
-                var videoStream = APP.simulcast.getReceivingVideoStream(stream);
-                APP.RTC.attachMediaStream(sel, videoStream);
+                APP.RTC.attachMediaStream(sel, stream);
 
                 if (isVideo)
                     waitForRemoteVideo(sel, thessrc, stream, peerJid);
@@ -8958,9 +8850,7 @@ var VideoLayout = (function (my) {
                     var mediaStream = APP.RTC.remoteStreams[jid][MediaStreamType.VIDEO_TYPE];
                     var sel = $('#participant_' + resourceJid + '>video');
 
-                    var videoStream = APP.simulcast.getReceivingVideoStream(
-                        mediaStream.stream);
-                    APP.RTC.attachMediaStream(sel, videoStream);
+                    APP.RTC.attachMediaStream(sel, mediaStream.stream);
                     if (lastNPickupJid == mediaStream.peerjid) {
                         // Clean up the lastN pickup jid.
                         lastNPickupJid = null;
@@ -9009,146 +8899,6 @@ var VideoLayout = (function (my) {
 
             }
         }
-    };
-
-    my.onSimulcastLayersChanging = function (endpointSimulcastLayers) {
-        endpointSimulcastLayers.forEach(function (esl) {
-
-            var resource = esl.endpoint;
-
-            // if lastN is enabled *and* the endpoint is *not* in the lastN set,
-            // then ignore the event (= do not preload anything).
-            //
-            // The bridge could probably stop sending this message if it's for
-            // an endpoint that's not in lastN.
-
-            if (lastNCount != -1
-                && (lastNCount < 1 || lastNEndpointsCache.indexOf(resource) === -1)) {
-                return;
-            }
-
-            var primarySSRC = esl.simulcastLayer.primarySSRC;
-
-            // Get session and stream from primary ssrc.
-            var res = APP.simulcast.getReceivingVideoStreamBySSRC(primarySSRC);
-            var sid = res.sid;
-            var electedStream = res.stream;
-
-            if (sid && electedStream) {
-                var msid = APP.simulcast.getRemoteVideoStreamIdBySSRC(primarySSRC);
-
-                console.info([esl, primarySSRC, msid, sid, electedStream]);
-
-                var preload = (Strophe.getResourceFromJid(APP.xmpp.getJidFromSSRC(primarySSRC)) == largeVideoState.userResourceJid);
-
-                if (preload) {
-                    if (largeVideoState.preload)
-                    {
-                        $(largeVideoState.preload).remove();
-                    }
-                    console.info('Preloading remote video');
-                    largeVideoState.preload = $('<video autoplay></video>');
-                    // ssrcs are unique in an rtp session
-                    largeVideoState.preload_ssrc = primarySSRC;
-
-                    APP.RTC.attachMediaStream(largeVideoState.preload, electedStream)
-                }
-
-            } else {
-                console.error('Could not find a stream or a session.', sid, electedStream);
-            }
-        });
-    };
-
-    /**
-     * On simulcast layers changed event.
-     */
-    my.onSimulcastLayersChanged = function (endpointSimulcastLayers) {
-        endpointSimulcastLayers.forEach(function (esl) {
-
-            var resource = esl.endpoint;
-
-            // if lastN is enabled *and* the endpoint is *not* in the lastN set,
-            // then ignore the event (= do not change large video/thumbnail
-            // SRCs).
-            //
-            // Note that even if we ignore the "changed" event in this event
-            // handler, the bridge must continue sending these events because
-            // the simulcast code in simulcast.js uses it to know what's going
-            // to be streamed by the bridge when/if the endpoint gets back into
-            // the lastN set.
-
-            if (lastNCount != -1
-                && (lastNCount < 1 || lastNEndpointsCache.indexOf(resource) === -1)) {
-                return;
-            }
-
-            var primarySSRC = esl.simulcastLayer.primarySSRC;
-
-            // Get session and stream from primary ssrc.
-            var res = APP.simulcast.getReceivingVideoStreamBySSRC(primarySSRC);
-            var sid = res.sid;
-            var electedStream = res.stream;
-
-            if (sid && electedStream) {
-                var msid = APP.simulcast.getRemoteVideoStreamIdBySSRC(primarySSRC);
-
-                console.info('Switching simulcast substream.');
-                console.info([esl, primarySSRC, msid, sid, electedStream]);
-
-                var msidParts = msid.split(' ');
-                var selRemoteVideo = $(['#', 'remoteVideo_', sid, '_', msidParts[0]].join(''));
-
-                var updateLargeVideo = (Strophe.getResourceFromJid(APP.xmpp.getJidFromSSRC(primarySSRC))
-                    == largeVideoState.userResourceJid);
-                var updateFocusedVideoSrc = (focusedVideoInfo && focusedVideoInfo.src && focusedVideoInfo.src != '' &&
-                    (APP.RTC.getVideoSrc(selRemoteVideo[0]) == focusedVideoInfo.src));
-
-                var electedStreamUrl;
-                if (largeVideoState.preload_ssrc == primarySSRC)
-                {
-                    APP.RTC.setVideoSrc(selRemoteVideo[0], APP.RTC.getVideoSrc(largeVideoState.preload[0]));
-                }
-                else
-                {
-                    if (largeVideoState.preload
-                        && largeVideoState.preload != null) {
-                        $(largeVideoState.preload).remove();
-                    }
-
-                    largeVideoState.preload_ssrc = 0;
-
-                    APP.RTC.attachMediaStream(selRemoteVideo, electedStream);
-                }
-
-                var jid = APP.xmpp.getJidFromSSRC(primarySSRC);
-
-                if (updateLargeVideo) {
-                    VideoLayout.updateLargeVideo(APP.RTC.getVideoSrc(selRemoteVideo[0]), null,
-                        Strophe.getResourceFromJid(jid));
-                }
-
-                if (updateFocusedVideoSrc) {
-                    focusedVideoInfo.src = APP.RTC.getVideoSrc(selRemoteVideo[0]);
-                }
-
-                var videoId;
-                if(resource == APP.xmpp.myResource())
-                {
-                    videoId = "localVideoContainer";
-                }
-                else
-                {
-                    videoId = "participant_" + resource;
-                }
-                var connectionIndicator = VideoLayout.connectionIndicators[videoId];
-                if(connectionIndicator)
-                    connectionIndicator.updatePopoverData();
-
-            } else {
-                console.error('Could not find a stream or a sid.', sid, electedStream);
-            }
-        });
     };
 
     /**
@@ -9248,7 +8998,7 @@ var VideoLayout = (function (my) {
 }(VideoLayout || {}));
 
 module.exports = VideoLayout;
-},{"../../../service/RTC/MediaStreamTypes":96,"../../../service/UI/UIEvents":101,"../audio_levels/AudioLevels":10,"../avatar/Avatar":14,"../etherpad/Etherpad":15,"../prezi/Prezi":16,"../side_pannels/chat/Chat":19,"../side_pannels/contactlist/ContactList":23,"../util/NicknameHandler":30,"../util/UIUtil":31,"./ConnectionIndicator":32}],34:[function(require,module,exports){
+},{"../../../service/RTC/MediaStreamTypes":93,"../../../service/UI/UIEvents":98,"../audio_levels/AudioLevels":10,"../avatar/Avatar":14,"../etherpad/Etherpad":15,"../prezi/Prezi":16,"../side_pannels/chat/Chat":19,"../side_pannels/contactlist/ContactList":23,"../util/NicknameHandler":30,"../util/UIUtil":31,"./ConnectionIndicator":32}],34:[function(require,module,exports){
 //var nouns = [
 //];
 var pluralNouns = [
@@ -9707,7 +9457,7 @@ var ConnectionQuality = {
 };
 
 module.exports = ConnectionQuality;
-},{"../../service/connectionquality/CQEvents":103,"../../service/xmpp/XMPPEvents":107,"events":66}],38:[function(require,module,exports){
+},{"../../service/connectionquality/CQEvents":100,"../../service/xmpp/XMPPEvents":104,"events":62}],38:[function(require,module,exports){
 /* global $, alert, APP, changeLocalVideo, chrome, config, getConferenceHandler,
  getUserMediaWithConstraints */
 /**
@@ -10075,7 +9825,7 @@ module.exports = {
 };
 
 
-},{"../../service/desktopsharing/DesktopSharingEventTypes":104,"events":66}],39:[function(require,module,exports){
+},{"../../service/desktopsharing/DesktopSharingEventTypes":101,"events":62}],39:[function(require,module,exports){
 //maps keycode to character, id of popover for given function and function
 var shortcuts = {
     67: {
@@ -10299,7 +10049,7 @@ var Members = {
 
 module.exports = Members;
 
-},{"../../service/members/Events":105,"../../service/xmpp/XMPPEvents":107,"events":66}],41:[function(require,module,exports){
+},{"../../service/members/Events":102,"../../service/xmpp/XMPPEvents":104,"events":62}],41:[function(require,module,exports){
 var email = '';
 var displayName = '';
 var userId;
@@ -10367,1268 +10117,6 @@ var Settings =
 module.exports = Settings;
 
 },{}],42:[function(require,module,exports){
-/**
- *
- * @constructor
- */
-function SimulcastLogger(name, lvl) {
-    this.name = name;
-    this.lvl = lvl;
-}
-
-SimulcastLogger.prototype.log = function (text) {
-    if (this.lvl) {
-        console.log(text);
-    }
-};
-
-SimulcastLogger.prototype.info = function (text) {
-    if (this.lvl > 1) {
-        console.info(text);
-    }
-};
-
-SimulcastLogger.prototype.fine = function (text) {
-    if (this.lvl > 2) {
-        console.log(text);
-    }
-};
-
-SimulcastLogger.prototype.error = function (text) {
-    console.error(text);
-};
-
-module.exports = SimulcastLogger;
-},{}],43:[function(require,module,exports){
-var SimulcastLogger = require("./SimulcastLogger");
-var SimulcastUtils = require("./SimulcastUtils");
-var MediaStreamType = require("../../service/RTC/MediaStreamTypes");
-
-function SimulcastReceiver() {
-    this.simulcastUtils = new SimulcastUtils();
-    this.logger = new SimulcastLogger('SimulcastReceiver', 1);
-}
-
-SimulcastReceiver.prototype._remoteVideoSourceCache = '';
-SimulcastReceiver.prototype._remoteMaps = {
-    msid2Quality: {},
-    ssrc2Msid: {},
-    msid2ssrc: {},
-    receivingVideoStreams: {}
-};
-
-SimulcastReceiver.prototype._cacheRemoteVideoSources = function (lines) {
-    this._remoteVideoSourceCache = this.simulcastUtils._getVideoSources(lines);
-};
-
-SimulcastReceiver.prototype._restoreRemoteVideoSources = function (lines) {
-    this.simulcastUtils._replaceVideoSources(lines, this._remoteVideoSourceCache);
-};
-
-SimulcastReceiver.prototype._ensureGoogConference = function (lines) {
-    var sb;
-
-    this.logger.info('Ensuring x-google-conference flag...')
-
-    if (this.simulcastUtils._indexOfArray('a=x-google-flag:conference', lines) === this.simulcastUtils._emptyCompoundIndex) {
-        // TODO(gp) do that for the audio as well as suggested by fippo.
-        // Add the google conference flag
-        sb = this.simulcastUtils._getVideoSources(lines);
-        sb = ['a=x-google-flag:conference'].concat(sb);
-        this.simulcastUtils._replaceVideoSources(lines, sb);
-    }
-};
-
-SimulcastReceiver.prototype._restoreSimulcastGroups = function (sb) {
-    this._restoreRemoteVideoSources(sb);
-};
-
-/**
- * Restores the simulcast groups of the remote description. In
- * transformRemoteDescription we remove those in order for the set remote
- * description to succeed. The focus needs the signal the groups to new
- * participants.
- *
- * @param desc
- * @returns {*}
- */
-SimulcastReceiver.prototype.reverseTransformRemoteDescription = function (desc) {
-    var sb;
-
-    if (!this.simulcastUtils.isValidDescription(desc)) {
-        return desc;
-    }
-
-    if (config.enableSimulcast) {
-        sb = desc.sdp.split('\r\n');
-
-        this._restoreSimulcastGroups(sb);
-
-        desc = new RTCSessionDescription({
-            type: desc.type,
-            sdp: sb.join('\r\n')
-        });
-    }
-
-    return desc;
-};
-
-SimulcastUtils.prototype._ensureOrder = function (lines) {
-    var videoSources, sb;
-
-    videoSources = this.parseMedia(lines, ['video'])[0];
-    sb = this._compileVideoSources(videoSources);
-
-    this._replaceVideoSources(lines, sb);
-};
-
-SimulcastReceiver.prototype._updateRemoteMaps = function (lines) {
-    var remoteVideoSources = this.simulcastUtils.parseMedia(lines, ['video'])[0],
-        videoSource, quality;
-
-    // (re) initialize the remote maps.
-    this._remoteMaps.msid2Quality = {};
-    this._remoteMaps.ssrc2Msid = {};
-    this._remoteMaps.msid2ssrc = {};
-
-    var self = this;
-    if (remoteVideoSources.groups && remoteVideoSources.groups.length !== 0) {
-        remoteVideoSources.groups.forEach(function (group) {
-            if (group.semantics === 'SIM' && group.ssrcs && group.ssrcs.length !== 0) {
-                quality = 0;
-                group.ssrcs.forEach(function (ssrc) {
-                    videoSource = remoteVideoSources.sources[ssrc];
-                    self._remoteMaps.msid2Quality[videoSource.msid] = quality++;
-                    self._remoteMaps.ssrc2Msid[videoSource.ssrc] = videoSource.msid;
-                    self._remoteMaps.msid2ssrc[videoSource.msid] = videoSource.ssrc;
-                });
-            }
-        });
-    }
-};
-
-SimulcastReceiver.prototype._setReceivingVideoStream = function (resource, ssrc) {
-    this._remoteMaps.receivingVideoStreams[resource] = ssrc;
-};
-
-/**
- * Returns a stream with single video track, the one currently being
- * received by this endpoint.
- *
- * @param stream the remote simulcast stream.
- * @returns {webkitMediaStream}
- */
-SimulcastReceiver.prototype.getReceivingVideoStream = function (stream) {
-    var tracks, i, electedTrack, msid, quality = 0, receivingTrackId;
-
-    var self = this;
-    if (config.enableSimulcast) {
-
-        stream.getVideoTracks().some(function (track) {
-            return Object.keys(self._remoteMaps.receivingVideoStreams).some(function (resource) {
-                var ssrc = self._remoteMaps.receivingVideoStreams[resource];
-                var msid = self._remoteMaps.ssrc2Msid[ssrc];
-                if (msid == [stream.id, track.id].join(' ')) {
-                    electedTrack = track;
-                    return true;
-                }
-            });
-        });
-
-        if (!electedTrack) {
-            // we don't have an elected track, choose by initial quality.
-            tracks = stream.getVideoTracks();
-            for (i = 0; i < tracks.length; i++) {
-                msid = [stream.id, tracks[i].id].join(' ');
-                if (this._remoteMaps.msid2Quality[msid] === quality) {
-                    electedTrack = tracks[i];
-                    break;
-                }
-            }
-
-            // TODO(gp) if the initialQuality could not be satisfied, lower
-            // the requirement and try again.
-        }
-    }
-
-    return (electedTrack)
-        ? new webkitMediaStream([electedTrack])
-        : stream;
-};
-
-SimulcastReceiver.prototype.getReceivingSSRC = function (jid) {
-    var resource = Strophe.getResourceFromJid(jid);
-    var ssrc = this._remoteMaps.receivingVideoStreams[resource];
-
-    // If we haven't receiving a "changed" event yet, then we must be receiving
-    // low quality (that the sender always streams).
-    if(!ssrc)
-    {
-        var remoteStreamObject = APP.RTC.remoteStreams[jid][MediaStreamType.VIDEO_TYPE];
-        var remoteStream = remoteStreamObject.getOriginalStream();
-        var tracks = remoteStream.getVideoTracks();
-        if (tracks) {
-            for (var k = 0; k < tracks.length; k++) {
-                var track = tracks[k];
-                var msid = [remoteStream.id, track.id].join(' ');
-                var _ssrc = this._remoteMaps.msid2ssrc[msid];
-                var quality = this._remoteMaps.msid2Quality[msid];
-                if (quality == 0) {
-                    ssrc = _ssrc;
-                }
-            }
-        }
-    }
-
-    return ssrc;
-};
-
-SimulcastReceiver.prototype.getReceivingVideoStreamBySSRC = function (ssrc)
-{
-    var sid, electedStream;
-    var i, j, k;
-    var jid = APP.xmpp.getJidFromSSRC(ssrc);
-    if(jid && APP.RTC.remoteStreams[jid])
-    {
-        var remoteStreamObject = APP.RTC.remoteStreams[jid][MediaStreamType.VIDEO_TYPE];
-        var remoteStream = remoteStreamObject.getOriginalStream();
-        var tracks = remoteStream.getVideoTracks();
-        if (tracks) {
-            for (k = 0; k < tracks.length; k++) {
-                var track = tracks[k];
-                var msid = [remoteStream.id, track.id].join(' ');
-                var tmp = this._remoteMaps.msid2ssrc[msid];
-                if (tmp == ssrc) {
-                    electedStream = new webkitMediaStream([track]);
-                    sid = remoteStreamObject.sid;
-                    // stream found, stop.
-                    break;
-                }
-            }
-        }
-
-    }
-    else
-    {
-        console.debug(APP.RTC.remoteStreams, jid, ssrc);
-    }
-
-    return {
-        sid: sid,
-        stream: electedStream
-    };
-};
-
-/**
- * Gets the fully qualified msid (stream.id + track.id) associated to the
- * SSRC.
- *
- * @param ssrc
- * @returns {*}
- */
-SimulcastReceiver.prototype.getRemoteVideoStreamIdBySSRC = function (ssrc) {
-    return this._remoteMaps.ssrc2Msid[ssrc];
-};
-
-/**
- * Removes the ssrc-group:SIM from the remote description bacause Chrome
- * either gets confused and thinks this is an FID group or, if an FID group
- * is already present, it fails to set the remote description.
- *
- * @param desc
- * @returns {*}
- */
-SimulcastReceiver.prototype.transformRemoteDescription = function (desc) {
-
-    if (desc && desc.sdp) {
-        var sb = desc.sdp.split('\r\n');
-
-        this._updateRemoteMaps(sb);
-        this._cacheRemoteVideoSources(sb);
-
-        // NOTE(gp) this needs to be called after updateRemoteMaps because we
-        // need the simulcast group in the _updateRemoteMaps() method.
-        this.simulcastUtils._removeSimulcastGroup(sb);
-
-        if (desc.sdp.indexOf('a=ssrc-group:SIM') !== -1) {
-            // We don't need the goog conference flag if we're not doing
-            // simulcast.
-            this._ensureGoogConference(sb);
-        }
-
-        desc = new RTCSessionDescription({
-            type: desc.type,
-            sdp: sb.join('\r\n')
-        });
-
-        this.logger.fine(['Transformed remote description', desc.sdp].join(' '));
-    }
-
-    return desc;
-};
-
-module.exports = SimulcastReceiver;
-},{"../../service/RTC/MediaStreamTypes":96,"./SimulcastLogger":42,"./SimulcastUtils":45}],44:[function(require,module,exports){
-var SimulcastLogger = require("./SimulcastLogger");
-var SimulcastUtils = require("./SimulcastUtils");
-
-function SimulcastSender() {
-    this.simulcastUtils = new SimulcastUtils();
-    this.logger = new SimulcastLogger('SimulcastSender', 1);
-}
-
-SimulcastSender.prototype.displayedLocalVideoStream = null;
-
-SimulcastSender.prototype._generateGuid = (function () {
-    function s4() {
-        return Math.floor((1 + Math.random()) * 0x10000)
-            .toString(16)
-            .substring(1);
-    }
-
-    return function () {
-        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-            s4() + '-' + s4() + s4() + s4();
-    };
-}());
-
-// Returns a random integer between min (included) and max (excluded)
-// Using Math.round() gives a non-uniform distribution!
-SimulcastSender.prototype._generateRandomSSRC = function () {
-    var min = 0, max = 0xffffffff;
-    return Math.floor(Math.random() * (max - min)) + min;
-};
-
-SimulcastSender.prototype.getLocalVideoStream = function () {
-    return (this.displayedLocalVideoStream != null)
-        ? this.displayedLocalVideoStream
-        // in case we have no simulcast at all, i.e. we didn't perform the GUM
-        : APP.RTC.localVideo.getOriginalStream();
-};
-
-function NativeSimulcastSender() {
-    SimulcastSender.call(this); // call the super constructor.
-}
-
-NativeSimulcastSender.prototype = Object.create(SimulcastSender.prototype);
-
-NativeSimulcastSender.prototype._localExplosionMap = {};
-NativeSimulcastSender.prototype._isUsingScreenStream = false;
-NativeSimulcastSender.prototype._localVideoSourceCache = '';
-
-NativeSimulcastSender.prototype.reset = function () {
-    this._localExplosionMap = {};
-    this._isUsingScreenStream = APP.desktopsharing.isUsingScreenStream();
-};
-
-NativeSimulcastSender.prototype._cacheLocalVideoSources = function (lines) {
-    this._localVideoSourceCache = this.simulcastUtils._getVideoSources(lines);
-};
-
-NativeSimulcastSender.prototype._restoreLocalVideoSources = function (lines) {
-    this.simulcastUtils._replaceVideoSources(lines, this._localVideoSourceCache);
-};
-
-NativeSimulcastSender.prototype._appendSimulcastGroup = function (lines) {
-    var videoSources, ssrcGroup, simSSRC, numOfSubs = 2, i, sb, msid;
-
-    this.logger.info('Appending simulcast group...');
-
-    // Get the primary SSRC information.
-    videoSources = this.simulcastUtils.parseMedia(lines, ['video'])[0];
-
-    // Start building the SIM SSRC group.
-    ssrcGroup = ['a=ssrc-group:SIM'];
-
-    // The video source buffer.
-    sb = [];
-
-    // Create the simulcast sub-streams.
-    for (i = 0; i < numOfSubs; i++) {
-        // TODO(gp) prevent SSRC collision.
-        simSSRC = this._generateRandomSSRC();
-        ssrcGroup.push(simSSRC);
-
-        if (videoSources.base) {
-            sb.splice.apply(sb, [sb.length, 0].concat(
-                [["a=ssrc:", simSSRC, " cname:", videoSources.base.cname].join(''),
-                    ["a=ssrc:", simSSRC, " msid:", videoSources.base.msid].join('')]
-            ));
-        }
-
-        this.logger.info(['Generated substream ', i, ' with SSRC ', simSSRC, '.'].join(''));
-
-    }
-
-    // Add the group sim layers.
-    sb.splice(0, 0, ssrcGroup.join(' '))
-
-    this.simulcastUtils._replaceVideoSources(lines, sb);
-};
-
-// Does the actual patching.
-NativeSimulcastSender.prototype._ensureSimulcastGroup = function (lines) {
-
-    this.logger.info('Ensuring simulcast group...');
-
-    if (this.simulcastUtils._indexOfArray('a=ssrc-group:SIM', lines) === this.simulcastUtils._emptyCompoundIndex) {
-        this._appendSimulcastGroup(lines);
-        this._cacheLocalVideoSources(lines);
-    } else {
-        // verify that the ssrcs participating in the SIM group are present
-        // in the SDP (needed for presence).
-        this._restoreLocalVideoSources(lines);
-    }
-};
-
-/**
- * Produces a single stream with multiple tracks for local video sources.
- *
- * @param lines
- * @private
- */
-NativeSimulcastSender.prototype._explodeSimulcastSenderSources = function (lines) {
-    var sb, msid, sid, tid, videoSources, self;
-
-    this.logger.info('Exploding local video sources...');
-
-    videoSources = this.simulcastUtils.parseMedia(lines, ['video'])[0];
-
-    self = this;
-    if (videoSources.groups && videoSources.groups.length !== 0) {
-        videoSources.groups.forEach(function (group) {
-            if (group.semantics === 'SIM') {
-                group.ssrcs.forEach(function (ssrc) {
-
-                    // Get the msid for this ssrc..
-                    if (self._localExplosionMap[ssrc]) {
-                        // .. either from the explosion map..
-                        msid = self._localExplosionMap[ssrc];
-                    } else {
-                        // .. or generate a new one (msid).
-                        sid = videoSources.sources[ssrc].msid
-                            .substring(0, videoSources.sources[ssrc].msid.indexOf(' '));
-
-                        tid = self._generateGuid();
-                        msid = [sid, tid].join(' ');
-                        self._localExplosionMap[ssrc] = msid;
-                    }
-
-                    // Assign it to the source object.
-                    videoSources.sources[ssrc].msid = msid;
-
-                    // TODO(gp) Change the msid of associated sources.
-                });
-            }
-        });
-    }
-
-    sb = this.simulcastUtils._compileVideoSources(videoSources);
-
-    this.simulcastUtils._replaceVideoSources(lines, sb);
-};
-
-/**
- * GUM for simulcast.
- *
- * @param constraints
- * @param success
- * @param err
- */
-NativeSimulcastSender.prototype.getUserMedia = function (constraints, success, err) {
-
-    // There's nothing special to do for native simulcast, so just do a normal GUM.
-    navigator.webkitGetUserMedia(constraints, function (hqStream) {
-        success(hqStream);
-    }, err);
-};
-
-/**
- * Prepares the local description for public usage (i.e. to be signaled
- * through Jingle to the focus).
- *
- * @param desc
- * @returns {RTCSessionDescription}
- */
-NativeSimulcastSender.prototype.reverseTransformLocalDescription = function (desc) {
-    var sb;
-
-    if (!this.simulcastUtils.isValidDescription(desc) || this._isUsingScreenStream) {
-        return desc;
-    }
-
-
-    sb = desc.sdp.split('\r\n');
-
-    this._explodeSimulcastSenderSources(sb);
-
-    desc = new RTCSessionDescription({
-        type: desc.type,
-        sdp: sb.join('\r\n')
-    });
-
-    this.logger.fine(['Exploded local video sources', desc.sdp].join(' '));
-
-    return desc;
-};
-
-/**
- * Ensures that the simulcast group is present in the answer, _if_ native
- * simulcast is enabled,
- *
- * @param desc
- * @returns {*}
- */
-NativeSimulcastSender.prototype.transformAnswer = function (desc) {
-
-    if (!this.simulcastUtils.isValidDescription(desc) || this._isUsingScreenStream) {
-        return desc;
-    }
-
-    var sb = desc.sdp.split('\r\n');
-
-    // Even if we have enabled native simulcasting previously
-    // (with a call to SLD with an appropriate SDP, for example),
-    // createAnswer seems to consistently generate incomplete SDP
-    // with missing SSRCS.
-    //
-    // So, subsequent calls to SLD will have missing SSRCS and presence
-    // won't have the complete list of SRCs.
-    this._ensureSimulcastGroup(sb);
-
-    desc = new RTCSessionDescription({
-        type: desc.type,
-        sdp: sb.join('\r\n')
-    });
-
-    this.logger.fine(['Transformed answer', desc.sdp].join(' '));
-
-    return desc;
-};
-
-
-/**
- *
- *
- * @param desc
- * @returns {*}
- */
-NativeSimulcastSender.prototype.transformLocalDescription = function (desc) {
-    return desc;
-};
-
-NativeSimulcastSender.prototype._setLocalVideoStreamEnabled = function (ssrc, enabled) {
-    // Nothing to do here, native simulcast does that auto-magically.
-};
-
-NativeSimulcastSender.prototype.constructor = NativeSimulcastSender;
-
-function SimpleSimulcastSender() {
-    SimulcastSender.call(this);
-}
-
-SimpleSimulcastSender.prototype = Object.create(SimulcastSender.prototype);
-
-SimpleSimulcastSender.prototype.localStream = null;
-SimpleSimulcastSender.prototype._localMaps = {
-    msids: [],
-    msid2ssrc: {}
-};
-
-/**
- * Groups local video sources together in the ssrc-group:SIM group.
- *
- * @param lines
- * @private
- */
-SimpleSimulcastSender.prototype._groupLocalVideoSources = function (lines) {
-    var sb, videoSources, ssrcs = [], ssrc;
-
-    this.logger.info('Grouping local video sources...');
-
-    videoSources = this.simulcastUtils.parseMedia(lines, ['video'])[0];
-
-    for (ssrc in videoSources.sources) {
-        // jitsi-meet destroys/creates streams at various places causing
-        // the original local stream ids to change. The only thing that
-        // remains unchanged is the trackid.
-        this._localMaps.msid2ssrc[videoSources.sources[ssrc].msid.split(' ')[1]] = ssrc;
-    }
-
-    var self = this;
-    // TODO(gp) add only "free" sources.
-    this._localMaps.msids.forEach(function (msid) {
-        ssrcs.push(self._localMaps.msid2ssrc[msid]);
-    });
-
-    if (!videoSources.groups) {
-        videoSources.groups = [];
-    }
-
-    videoSources.groups.push({
-        'semantics': 'SIM',
-        'ssrcs': ssrcs
-    });
-
-    sb = this.simulcastUtils._compileVideoSources(videoSources);
-
-    this.simulcastUtils._replaceVideoSources(lines, sb);
-};
-
-/**
- * GUM for simulcast.
- *
- * @param constraints
- * @param success
- * @param err
- */
-SimpleSimulcastSender.prototype.getUserMedia = function (constraints, success, err) {
-
-    // TODO(gp) what if we request a resolution not supported by the hardware?
-    // TODO(gp) make the lq stream configurable; although this wouldn't work with native simulcast
-    var lqConstraints = {
-        audio: false,
-        video: {
-            mandatory: {
-                maxWidth: 320,
-                maxHeight: 180,
-                maxFrameRate: 15
-            }
-        }
-    };
-
-    this.logger.info('HQ constraints: ', constraints);
-    this.logger.info('LQ constraints: ', lqConstraints);
-
-
-    // NOTE(gp) if we request the lq stream first webkitGetUserMedia
-    // fails randomly. Tested with Chrome 37. As fippo suggested, the
-    // reason appears to be that Chrome only acquires the cam once and
-    // then downscales the picture (https://code.google.com/p/chromium/issues/detail?id=346616#c11)
-
-    var self = this;
-    navigator.webkitGetUserMedia(constraints, function (hqStream) {
-
-        self.localStream = hqStream;
-
-        // reset local maps.
-        self._localMaps.msids = [];
-        self._localMaps.msid2ssrc = {};
-
-        // add hq trackid to local map
-        self._localMaps.msids.push(hqStream.getVideoTracks()[0].id);
-
-        navigator.webkitGetUserMedia(lqConstraints, function (lqStream) {
-
-            self.displayedLocalVideoStream = lqStream;
-
-            // NOTE(gp) The specification says Array.forEach() will visit
-            // the array elements in numeric order, and that it doesn't
-            // visit elements that don't exist.
-
-            // add lq trackid to local map
-            self._localMaps.msids.splice(0, 0, lqStream.getVideoTracks()[0].id);
-
-            self.localStream.addTrack(lqStream.getVideoTracks()[0]);
-            success(self.localStream);
-        }, err);
-    }, err);
-};
-
-/**
- * Prepares the local description for public usage (i.e. to be signaled
- * through Jingle to the focus).
- *
- * @param desc
- * @returns {RTCSessionDescription}
- */
-SimpleSimulcastSender.prototype.reverseTransformLocalDescription = function (desc) {
-    var sb;
-
-    if (!this.simulcastUtils.isValidDescription(desc)) {
-        return desc;
-    }
-
-    sb = desc.sdp.split('\r\n');
-
-    this._groupLocalVideoSources(sb);
-
-    desc = new RTCSessionDescription({
-        type: desc.type,
-        sdp: sb.join('\r\n')
-    });
-
-    this.logger.fine('Grouped local video sources');
-    this.logger.fine(desc.sdp);
-
-    return desc;
-};
-
-/**
- * Ensures that the simulcast group is present in the answer, _if_ native
- * simulcast is enabled,
- *
- * @param desc
- * @returns {*}
- */
-SimpleSimulcastSender.prototype.transformAnswer = function (desc) {
-    return desc;
-};
-
-
-/**
- *
- *
- * @param desc
- * @returns {*}
- */
-SimpleSimulcastSender.prototype.transformLocalDescription = function (desc) {
-
-    var sb = desc.sdp.split('\r\n');
-
-    this.simulcastUtils._removeSimulcastGroup(sb);
-
-    desc = new RTCSessionDescription({
-        type: desc.type,
-        sdp: sb.join('\r\n')
-    });
-
-    this.logger.fine('Transformed local description');
-    this.logger.fine(desc.sdp);
-
-    return desc;
-};
-
-SimpleSimulcastSender.prototype._setLocalVideoStreamEnabled = function (ssrc, enabled) {
-    var trackid;
-
-    var self = this;
-    this.logger.log(['Requested to', enabled ? 'enable' : 'disable', ssrc].join(' '));
-    if (Object.keys(this._localMaps.msid2ssrc).some(function (tid) {
-        // Search for the track id that corresponds to the ssrc
-        if (self._localMaps.msid2ssrc[tid] == ssrc) {
-            trackid = tid;
-            return true;
-        }
-    }) && self.localStream.getVideoTracks().some(function (track) {
-        // Start/stop the track that corresponds to the track id
-        if (track.id === trackid) {
-            track.enabled = enabled;
-            return true;
-        }
-    })) {
-        this.logger.log([trackid, enabled ? 'enabled' : 'disabled'].join(' '));
-        $(document).trigger(enabled
-            ? 'simulcastlayerstarted'
-            : 'simulcastlayerstopped');
-    } else {
-        this.logger.error("I don't have a local stream with SSRC " + ssrc);
-    }
-};
-
-SimpleSimulcastSender.prototype.constructor = SimpleSimulcastSender;
-
-function NoSimulcastSender() {
-    SimulcastSender.call(this);
-}
-
-NoSimulcastSender.prototype = Object.create(SimulcastSender.prototype);
-
-/**
- * GUM for simulcast.
- *
- * @param constraints
- * @param success
- * @param err
- */
-NoSimulcastSender.prototype.getUserMedia = function (constraints, success, err) {
-    navigator.webkitGetUserMedia(constraints, function (hqStream) {
-        success(hqStream);
-    }, err);
-};
-
-/**
- * Prepares the local description for public usage (i.e. to be signaled
- * through Jingle to the focus).
- *
- * @param desc
- * @returns {RTCSessionDescription}
- */
-NoSimulcastSender.prototype.reverseTransformLocalDescription = function (desc) {
-    return desc;
-};
-
-/**
- * Ensures that the simulcast group is present in the answer, _if_ native
- * simulcast is enabled,
- *
- * @param desc
- * @returns {*}
- */
-NoSimulcastSender.prototype.transformAnswer = function (desc) {
-    return desc;
-};
-
-
-/**
- *
- *
- * @param desc
- * @returns {*}
- */
-NoSimulcastSender.prototype.transformLocalDescription = function (desc) {
-    return desc;
-};
-
-NoSimulcastSender.prototype._setLocalVideoStreamEnabled = function (ssrc, enabled) {
-
-};
-
-NoSimulcastSender.prototype.constructor = NoSimulcastSender;
-
-module.exports = {
-    "native": NativeSimulcastSender,
-    "no": NoSimulcastSender
-}
-
-},{"./SimulcastLogger":42,"./SimulcastUtils":45}],45:[function(require,module,exports){
-var SimulcastLogger = require("./SimulcastLogger");
-
-/**
- *
- * @constructor
- */
-function SimulcastUtils() {
-    this.logger = new SimulcastLogger("SimulcastUtils", 1);
-}
-
-/**
- *
- * @type {{}}
- * @private
- */
-SimulcastUtils.prototype._emptyCompoundIndex = {};
-
-/**
- *
- * @param lines
- * @param videoSources
- * @private
- */
-SimulcastUtils.prototype._replaceVideoSources = function (lines, videoSources) {
-    var i, inVideo = false, index = -1, howMany = 0;
-
-    this.logger.info('Replacing video sources...');
-
-    for (i = 0; i < lines.length; i++) {
-        if (inVideo && lines[i].substring(0, 'm='.length) === 'm=') {
-            // Out of video.
-            break;
-        }
-
-        if (!inVideo && lines[i].substring(0, 'm=video '.length) === 'm=video ') {
-            // In video.
-            inVideo = true;
-        }
-
-        if (inVideo && (lines[i].substring(0, 'a=ssrc:'.length) === 'a=ssrc:'
-            || lines[i].substring(0, 'a=ssrc-group:'.length) === 'a=ssrc-group:')) {
-
-            if (index === -1) {
-                index = i;
-            }
-
-            howMany++;
-        }
-    }
-
-    //  efficiency baby ;)
-    lines.splice.apply(lines,
-        [index, howMany].concat(videoSources));
-
-};
-
-SimulcastUtils.prototype.isValidDescription = function (desc)
-{
-    return desc && desc != null
-        && desc.type && desc.type != ''
-        && desc.sdp && desc.sdp != '';
-};
-
-SimulcastUtils.prototype._getVideoSources = function (lines) {
-    var i, inVideo = false, sb = [];
-
-    this.logger.info('Getting video sources...');
-
-    for (i = 0; i < lines.length; i++) {
-        if (inVideo && lines[i].substring(0, 'm='.length) === 'm=') {
-            // Out of video.
-            break;
-        }
-
-        if (!inVideo && lines[i].substring(0, 'm=video '.length) === 'm=video ') {
-            // In video.
-            inVideo = true;
-        }
-
-        if (inVideo && lines[i].substring(0, 'a=ssrc:'.length) === 'a=ssrc:') {
-            // In SSRC.
-            sb.push(lines[i]);
-        }
-
-        if (inVideo && lines[i].substring(0, 'a=ssrc-group:'.length) === 'a=ssrc-group:') {
-            sb.push(lines[i]);
-        }
-    }
-
-    return sb;
-};
-
-SimulcastUtils.prototype.parseMedia = function (lines, mediatypes) {
-    var i, res = [], type, cur_media, idx, ssrcs, cur_ssrc, ssrc,
-        ssrc_attribute, group, semantics, skip = true;
-
-    this.logger.info('Parsing media sources...');
-
-    for (i = 0; i < lines.length; i++) {
-        if (lines[i].substring(0, 'm='.length) === 'm=') {
-
-            type = lines[i]
-                .substr('m='.length, lines[i].indexOf(' ') - 'm='.length);
-            skip = mediatypes !== undefined && mediatypes.indexOf(type) === -1;
-
-            if (!skip) {
-                cur_media = {
-                    'type': type,
-                    'sources': {},
-                    'groups': []
-                };
-
-                res.push(cur_media);
-            }
-
-        } else if (!skip && lines[i].substring(0, 'a=ssrc:'.length) === 'a=ssrc:') {
-
-            idx = lines[i].indexOf(' ');
-            ssrc = lines[i].substring('a=ssrc:'.length, idx);
-            if (cur_media.sources[ssrc] === undefined) {
-                cur_ssrc = {'ssrc': ssrc};
-                cur_media.sources[ssrc] = cur_ssrc;
-            }
-
-            ssrc_attribute = lines[i].substr(idx + 1).split(':', 2)[0];
-            cur_ssrc[ssrc_attribute] = lines[i].substr(idx + 1).split(':', 2)[1];
-
-            if (cur_media.base === undefined) {
-                cur_media.base = cur_ssrc;
-            }
-
-        } else if (!skip && lines[i].substring(0, 'a=ssrc-group:'.length) === 'a=ssrc-group:') {
-            idx = lines[i].indexOf(' ');
-            semantics = lines[i].substr(0, idx).substr('a=ssrc-group:'.length);
-            ssrcs = lines[i].substr(idx).trim().split(' ');
-            group = {
-                'semantics': semantics,
-                'ssrcs': ssrcs
-            };
-            cur_media.groups.push(group);
-        } else if (!skip && (lines[i].substring(0, 'a=sendrecv'.length) === 'a=sendrecv' ||
-            lines[i].substring(0, 'a=recvonly'.length) === 'a=recvonly' ||
-            lines[i].substring(0, 'a=sendonly'.length) === 'a=sendonly' ||
-            lines[i].substring(0, 'a=inactive'.length) === 'a=inactive')) {
-
-            cur_media.direction = lines[i].substring('a='.length);
-        }
-    }
-
-    return res;
-};
-
-/**
- * The _indexOfArray() method returns the first a CompoundIndex at which a
- * given element can be found in the array, or _emptyCompoundIndex if it is
- * not present.
- *
- * Example:
- *
- * _indexOfArray('3', [ 'this is line 1', 'this is line 2', 'this is line 3' ])
- *
- * returns {row: 2, column: 14}
- *
- * @param needle
- * @param haystack
- * @param start
- * @returns {}
- * @private
- */
-SimulcastUtils.prototype._indexOfArray = function (needle, haystack, start) {
-    var length = haystack.length, idx, i;
-
-    if (!start) {
-        start = 0;
-    }
-
-    for (i = start; i < length; i++) {
-        idx = haystack[i].indexOf(needle);
-        if (idx !== -1) {
-            return {row: i, column: idx};
-        }
-    }
-    return this._emptyCompoundIndex;
-};
-
-SimulcastUtils.prototype._removeSimulcastGroup = function (lines) {
-    var i;
-
-    for (i = lines.length - 1; i >= 0; i--) {
-        if (lines[i].indexOf('a=ssrc-group:SIM') !== -1) {
-            lines.splice(i, 1);
-        }
-    }
-};
-
-SimulcastUtils.prototype._compileVideoSources = function (videoSources) {
-    var sb = [], ssrc, addedSSRCs = [];
-
-    this.logger.info('Compiling video sources...');
-
-    // Add the groups
-    if (videoSources.groups && videoSources.groups.length !== 0) {
-        videoSources.groups.forEach(function (group) {
-            if (group.ssrcs && group.ssrcs.length !== 0) {
-                sb.push([['a=ssrc-group:', group.semantics].join(''), group.ssrcs.join(' ')].join(' '));
-
-                // if (group.semantics !== 'SIM') {
-                group.ssrcs.forEach(function (ssrc) {
-                    addedSSRCs.push(ssrc);
-                    sb.splice.apply(sb, [sb.length, 0].concat([
-                        ["a=ssrc:", ssrc, " cname:", videoSources.sources[ssrc].cname].join(''),
-                        ["a=ssrc:", ssrc, " msid:", videoSources.sources[ssrc].msid].join('')]));
-                });
-                //}
-            }
-        });
-    }
-
-    // Then add any free sources.
-    if (videoSources.sources) {
-        for (ssrc in videoSources.sources) {
-            if (addedSSRCs.indexOf(ssrc) === -1) {
-                sb.splice.apply(sb, [sb.length, 0].concat([
-                    ["a=ssrc:", ssrc, " cname:", videoSources.sources[ssrc].cname].join(''),
-                    ["a=ssrc:", ssrc, " msid:", videoSources.sources[ssrc].msid].join('')]));
-            }
-        }
-    }
-
-    return sb;
-};
-
-module.exports = SimulcastUtils;
-},{"./SimulcastLogger":42}],46:[function(require,module,exports){
-/*jslint plusplus: true */
-/*jslint nomen: true*/
-
-var SimulcastSender = require("./SimulcastSender");
-var NoSimulcastSender = SimulcastSender["no"];
-var NativeSimulcastSender = SimulcastSender["native"];
-var SimulcastReceiver = require("./SimulcastReceiver");
-var SimulcastUtils = require("./SimulcastUtils");
-var RTCEvents = require("../../service/RTC/RTCEvents");
-
-
-/**
- *
- * @constructor
- */
-function SimulcastManager() {
-
-    // Create the simulcast utilities.
-    this.simulcastUtils = new SimulcastUtils();
-
-    // Create remote simulcast.
-    this.simulcastReceiver = new SimulcastReceiver();
-
-    // Initialize local simulcast.
-
-    // TODO(gp) move into SimulcastManager.prototype.getUserMedia and take into
-    // account constraints.
-    if (!config.enableSimulcast) {
-        this.simulcastSender = new NoSimulcastSender();
-    } else {
-
-        var isChromium = window.chrome,
-            vendorName = window.navigator.vendor;
-        if(isChromium !== null && isChromium !== undefined
-            /* skip opera */
-            && vendorName === "Google Inc."
-            /* skip Chromium as suggested by fippo */
-            && !window.navigator.appVersion.match(/Chromium\//) ) {
-            var ver = parseInt(window.navigator.appVersion.match(/Chrome\/(\d+)\./)[1], 10);
-            if (ver > 37) {
-                this.simulcastSender = new NativeSimulcastSender();
-            } else {
-                this.simulcastSender = new NoSimulcastSender();
-            }
-        } else {
-            this.simulcastSender = new NoSimulcastSender();
-        }
-
-    }
-    APP.RTC.addListener(RTCEvents.SIMULCAST_LAYER_CHANGED,
-        function (endpointSimulcastLayers) {
-            endpointSimulcastLayers.forEach(function (esl) {
-                var ssrc = esl.simulcastLayer.primarySSRC;
-                simulcast._setReceivingVideoStream(esl.endpoint, ssrc);
-            });
-        });
-    APP.RTC.addListener(RTCEvents.SIMULCAST_START, function (simulcastLayer) {
-        var ssrc = simulcastLayer.primarySSRC;
-        simulcast._setLocalVideoStreamEnabled(ssrc, true);
-    });
-    APP.RTC.addListener(RTCEvents.SIMULCAST_STOP, function (simulcastLayer) {
-        var ssrc = simulcastLayer.primarySSRC;
-        simulcast._setLocalVideoStreamEnabled(ssrc, false);
-    });
-
-}
-
-/**
- * Restores the simulcast groups of the remote description. In
- * transformRemoteDescription we remove those in order for the set remote
- * description to succeed. The focus needs the signal the groups to new
- * participants.
- *
- * @param desc
- * @returns {*}
- */
-SimulcastManager.prototype.reverseTransformRemoteDescription = function (desc) {
-    return this.simulcastReceiver.reverseTransformRemoteDescription(desc);
-};
-
-/**
- * Removes the ssrc-group:SIM from the remote description bacause Chrome
- * either gets confused and thinks this is an FID group or, if an FID group
- * is already present, it fails to set the remote description.
- *
- * @param desc
- * @returns {*}
- */
-SimulcastManager.prototype.transformRemoteDescription = function (desc) {
-    return this.simulcastReceiver.transformRemoteDescription(desc);
-};
-
-/**
- * Gets the fully qualified msid (stream.id + track.id) associated to the
- * SSRC.
- *
- * @param ssrc
- * @returns {*}
- */
-SimulcastManager.prototype.getRemoteVideoStreamIdBySSRC = function (ssrc) {
-    return this.simulcastReceiver.getRemoteVideoStreamIdBySSRC(ssrc);
-};
-
-/**
- * Returns a stream with single video track, the one currently being
- * received by this endpoint.
- *
- * @param stream the remote simulcast stream.
- * @returns {webkitMediaStream}
- */
-SimulcastManager.prototype.getReceivingVideoStream = function (stream) {
-    return this.simulcastReceiver.getReceivingVideoStream(stream);
-};
-
-/**
- *
- *
- * @param desc
- * @returns {*}
- */
-SimulcastManager.prototype.transformLocalDescription = function (desc) {
-    return this.simulcastSender.transformLocalDescription(desc);
-};
-
-/**
- *
- * @returns {*}
- */
-SimulcastManager.prototype.getLocalVideoStream = function() {
-    return this.simulcastSender.getLocalVideoStream();
-};
-
-/**
- * GUM for simulcast.
- *
- * @param constraints
- * @param success
- * @param err
- */
-SimulcastManager.prototype.getUserMedia = function (constraints, success, err) {
-
-    this.simulcastSender.getUserMedia(constraints, success, err);
-};
-
-/**
- * Prepares the local description for public usage (i.e. to be signaled
- * through Jingle to the focus).
- *
- * @param desc
- * @returns {RTCSessionDescription}
- */
-SimulcastManager.prototype.reverseTransformLocalDescription = function (desc) {
-    return this.simulcastSender.reverseTransformLocalDescription(desc);
-};
-
-/**
- * Ensures that the simulcast group is present in the answer, _if_ native
- * simulcast is enabled,
- *
- * @param desc
- * @returns {*}
- */
-SimulcastManager.prototype.transformAnswer = function (desc) {
-    return this.simulcastSender.transformAnswer(desc);
-};
-
-SimulcastManager.prototype.getReceivingSSRC = function (jid) {
-    return this.simulcastReceiver.getReceivingSSRC(jid);
-};
-
-SimulcastManager.prototype.getReceivingVideoStreamBySSRC = function (msid) {
-    return this.simulcastReceiver.getReceivingVideoStreamBySSRC(msid);
-};
-
-/**
- *
- * @param lines
- * @param mediatypes
- * @returns {*}
- */
-SimulcastManager.prototype.parseMedia = function(lines, mediatypes) {
-    var sb = lines.sdp.split('\r\n');
-    return this.simulcastUtils.parseMedia(sb, mediatypes);
-};
-
-SimulcastManager.prototype._setReceivingVideoStream = function(resource, ssrc) {
-    this.simulcastReceiver._setReceivingVideoStream(resource, ssrc);
-};
-
-SimulcastManager.prototype._setLocalVideoStreamEnabled = function(ssrc, enabled) {
-    this.simulcastSender._setLocalVideoStreamEnabled(ssrc, enabled);
-};
-
-SimulcastManager.prototype.resetSender = function() {
-    if (typeof this.simulcastSender.reset === 'function'){
-        this.simulcastSender.reset();
-    }
-};
-
-var simulcast = new SimulcastManager();
-
-module.exports = simulcast;
-},{"../../service/RTC/RTCEvents":98,"./SimulcastReceiver":43,"./SimulcastSender":44,"./SimulcastUtils":45}],47:[function(require,module,exports){
 /**
  * Provides statistics for the local stream.
  */
@@ -11759,7 +10247,7 @@ LocalStatsCollector.prototype.stop = function () {
 };
 
 module.exports = LocalStatsCollector;
-},{}],48:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 /* global ssrc2jid */
 /* jshint -W117 */
 var RTCBrowserType = require("../../service/RTC/RTCBrowserType");
@@ -12501,7 +10989,7 @@ StatsCollector.prototype.processAudioLevelReport = function ()
 
 };
 
-},{"../../service/RTC/RTCBrowserType":97}],49:[function(require,module,exports){
+},{"../../service/RTC/RTCBrowserType":94}],44:[function(require,module,exports){
 /**
  * Created by hristo on 8/4/14.
  */
@@ -12634,7 +11122,7 @@ var statistics =
 
 
 module.exports = statistics;
-},{"../../service/RTC/StreamEventTypes.js":100,"../../service/xmpp/XMPPEvents":107,"./LocalStatsCollector.js":47,"./RTPStatsCollector.js":48,"events":66}],50:[function(require,module,exports){
+},{"../../service/RTC/StreamEventTypes.js":97,"../../service/xmpp/XMPPEvents":104,"./LocalStatsCollector.js":42,"./RTPStatsCollector.js":43,"events":62}],45:[function(require,module,exports){
 var i18n = require("i18next-client");
 var languages = require("../../service/translation/languages");
 var Settings = require("../settings/Settings");
@@ -12773,7 +11261,7 @@ module.exports = {
     }
 };
 
-},{"../../service/translation/languages":106,"../settings/Settings":41,"i18next-client":68}],51:[function(require,module,exports){
+},{"../../service/translation/languages":103,"../settings/Settings":41,"i18next-client":63}],46:[function(require,module,exports){
 /* jshint -W117 */
 var TraceablePeerConnection = require("./TraceablePeerConnection");
 var SDPDiffer = require("./SDPDiffer");
@@ -12781,6 +11269,7 @@ var SDPUtil = require("./SDPUtil");
 var SDP = require("./SDP");
 var RTCBrowserType = require("../../service/RTC/RTCBrowserType");
 var async = require("async");
+var transform = require("sdp-transform");
 
 // Jingle stuff
 function JingleSession(me, sid, connection, service) {
@@ -12871,8 +11360,8 @@ JingleSession.prototype.initiate = function (peerjid, isInitiator) {
     };
     this.peerconnection.onaddstream = function (event) {
         if (event.stream.id !== 'default') {
-            console.log("REMOTE STREAM ADDED: " + event.stream + " - " + event.stream.id);
-            self.remoteStreamAdded(event);
+        console.log("REMOTE STREAM ADDED: " + event.stream + " - " + event.stream.id);
+        self.remoteStreamAdded(event);
         } else {
             // This is a recvonly stream. Clients that implement Unified Plan,
             // such as Firefox use recvonly "streams/channels/tracks" for
@@ -12975,7 +11464,6 @@ JingleSession.prototype.accept = function () {
         // FIXME: change any inactive to sendrecv or whatever they were originally
         pranswer.sdp = pranswer.sdp.replace('a=inactive', 'a=sendrecv');
     }
-    pranswer = APP.simulcast.reverseTransformLocalDescription(pranswer);
     var prsdp = new SDP(pranswer.sdp);
     var accept = $iq({to: this.peerjid,
         type: 'set'})
@@ -13428,9 +11916,7 @@ JingleSession.prototype.createdAnswer = function (sdp, provisional) {
                         initiator: self.initiator,
                         responder: self.responder,
                         sid: self.sid });
-                var publicLocalDesc = APP.simulcast.reverseTransformLocalDescription(sdp);
-                var publicLocalSDP = new SDP(publicLocalDesc.sdp);
-                publicLocalSDP.toJingle(accept, self.initiator == self.me ? 'initiator' : 'responder', ssrcs);
+                self.localSDP.toJingle(accept, self.initiator == self.me ? 'initiator' : 'responder', ssrcs);
                 self.connection.sendIQ(accept,
                     function () {
                         var ack = {};
@@ -13787,7 +12273,7 @@ JingleSession.prototype.switchStreams = function (new_stream, oldStream, success
     }
 
     if(!isAudio)
-        APP.RTC.switchVideoStreams(new_stream, oldStream);
+    APP.RTC.switchVideoStreams(new_stream, oldStream);
 
     // Conference is not active
     if(!oldSdp || !self.peerconnection) {
@@ -14015,14 +12501,17 @@ JingleSession.onJingleFatalError = function (session, error)
 JingleSession.prototype.setLocalDescription = function () {
     // put our ssrcs into presence so other clients can identify our stream
     var newssrcs = [];
-    var media = APP.simulcast.parseMedia(this.peerconnection.localDescription);
-    media.forEach(function (media) {
+    var session = transform.parse(this.peerconnection.localDescription.sdp);
+    session.media.forEach(function (media) {
 
-        if(Object.keys(media.sources).length > 0) {
+        if (media.ssrcs != null && media.ssrcs.length > 0) {
             // TODO(gp) maybe exclude FID streams?
-            Object.keys(media.sources).forEach(function (ssrc) {
+            media.ssrcs.forEach(function (ssrc) {
+                if (ssrc.attribute !== 'cname') {
+                    return;
+                }
                 newssrcs.push({
-                    'ssrc': ssrc,
+                    'ssrc': ssrc.id,
                     'type': media.type,
                     'direction': media.direction
                 });
@@ -14166,7 +12655,7 @@ JingleSession.prototype.remoteStreamAdded = function (data, times) {
 
 module.exports = JingleSession;
 
-},{"../../service/RTC/RTCBrowserType":97,"./SDP":52,"./SDPDiffer":53,"./SDPUtil":54,"./TraceablePeerConnection":55,"async":65}],52:[function(require,module,exports){
+},{"../../service/RTC/RTCBrowserType":94,"./SDP":47,"./SDPDiffer":48,"./SDPUtil":49,"./TraceablePeerConnection":50,"async":60,"sdp-transform":90}],47:[function(require,module,exports){
 /* jshint -W117 */
 var SDPUtil = require("./SDPUtil");
 
@@ -14788,7 +13277,7 @@ SDP.prototype.jingle2media = function (content) {
 module.exports = SDP;
 
 
-},{"./SDPUtil":54}],53:[function(require,module,exports){
+},{"./SDPUtil":49}],48:[function(require,module,exports){
 function SDPDiffer(mySDP, otherSDP) {
     this.mySDP = mySDP;
     this.otherSDP = otherSDP;
@@ -14954,7 +13443,7 @@ SDPDiffer.prototype.toJingle = function(modify) {
 };
 
 module.exports = SDPDiffer;
-},{}],54:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 SDPUtil = {
     iceparams: function (mediadesc, sessiondesc) {
         var data = null;
@@ -15304,7 +13793,7 @@ SDPUtil = {
     }
 };
 module.exports = SDPUtil;
-},{}],55:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 function TraceablePeerConnection(ice_config, constraints) {
     var self = this;
     var RTCPeerconnection = navigator.mozGetUserMedia ? mozRTCPeerConnection : webkitRTCPeerConnection;
@@ -15315,6 +13804,8 @@ function TraceablePeerConnection(ice_config, constraints) {
     this.maxstats = 0; // limit to 300 values, i.e. 5 minutes; set to 0 to disable
     var Interop = require('sdp-interop').Interop;
     this.interop = new Interop();
+    var Simulcast = require('sdp-simulcast');
+    this.simulcast = new Simulcast({numOfLayers: 3, explodeRemoteSimulcast: false});
 
     // override as desired
     this.trace = function (what, info) {
@@ -15418,34 +13909,31 @@ if (TraceablePeerConnection.prototype.__defineGetter__ !== undefined) {
     TraceablePeerConnection.prototype.__defineGetter__('signalingState', function() { return this.peerconnection.signalingState; });
     TraceablePeerConnection.prototype.__defineGetter__('iceConnectionState', function() { return this.peerconnection.iceConnectionState; });
     TraceablePeerConnection.prototype.__defineGetter__('localDescription', function() {
-        this.trace('getLocalDescription::preTransform (Plan A)', dumpSDP(this.peerconnection.localDescription));
-        // if we're running on FF, transform to Plan B first.
         var desc = this.peerconnection.localDescription;
+        this.trace('getLocalDescription::preTransform', dumpSDP(desc));
+
+        // if we're running on FF, transform to Plan B first.
         if (navigator.mozGetUserMedia) {
             desc = this.interop.toPlanB(desc);
-        } else {
-            desc = APP.simulcast.reverseTransformLocalDescription(this.peerconnection.localDescription);
+            this.trace('getLocalDescription::postTransform (Plan B)', dumpSDP(desc));
         }
-        this.trace('getLocalDescription::postTransform (Plan B)', dumpSDP(desc));
         return desc;
     });
     TraceablePeerConnection.prototype.__defineGetter__('remoteDescription', function() {
-        this.trace('getRemoteDescription::preTransform (Plan A)', dumpSDP(this.peerconnection.remoteDescription));
-        // if we're running on FF, transform to Plan B first.
         var desc = this.peerconnection.remoteDescription;
+        this.trace('getRemoteDescription::preTransform', dumpSDP(desc));
+
+        // if we're running on FF, transform to Plan B first.
         if (navigator.mozGetUserMedia) {
             desc = this.interop.toPlanB(desc);
-        } else {
-            desc = APP.simulcast.reverseTransformRemoteDescription(this.peerconnection.remoteDescription);
+            this.trace('getRemoteDescription::postTransform (Plan B)', dumpSDP(desc));
         }
-        this.trace('getRemoteDescription::postTransform (Plan B)', dumpSDP(desc));
         return desc;
     });
 }
 
 TraceablePeerConnection.prototype.addStream = function (stream) {
     this.trace('addStream', stream.id);
-    APP.simulcast.resetSender();
     try
     {
         this.peerconnection.addStream(stream);
@@ -15459,7 +13947,6 @@ TraceablePeerConnection.prototype.addStream = function (stream) {
 
 TraceablePeerConnection.prototype.removeStream = function (stream, stopStreams) {
     this.trace('removeStream', stream.id);
-    APP.simulcast.resetSender();
     if(stopStreams) {
         stream.getAudioTracks().forEach(function (track) {
             track.stop();
@@ -15483,14 +13970,13 @@ TraceablePeerConnection.prototype.createDataChannel = function (label, opts) {
 };
 
 TraceablePeerConnection.prototype.setLocalDescription = function (description, successCallback, failureCallback) {
-    this.trace('setLocalDescription::preTransform (Plan B)', dumpSDP(description));
+    this.trace('setLocalDescription::preTransform', dumpSDP(description));
     // if we're running on FF, transform to Plan A first.
     if (navigator.mozGetUserMedia) {
         description = this.interop.toUnifiedPlan(description);
-    } else {
-        description = APP.simulcast.transformLocalDescription(description);
+        this.trace('setLocalDescription::postTransform (Plan A)', dumpSDP(description));
     }
-    this.trace('setLocalDescription::postTransform (Plan A)', dumpSDP(description));
+
     var self = this;
     this.peerconnection.setLocalDescription(description,
         function () {
@@ -15510,15 +13996,16 @@ TraceablePeerConnection.prototype.setLocalDescription = function (description, s
 };
 
 TraceablePeerConnection.prototype.setRemoteDescription = function (description, successCallback, failureCallback) {
-    this.trace('setRemoteDescription::preTransform (Plan B)', dumpSDP(description));
+    this.trace('setRemoteDescription::preTransform', dumpSDP(description));
+    // TODO the focus should squeze or explode the remote simulcast
+    description = this.simulcast.mungeRemoteDescription(description);
+    this.trace('setRemoteDescription::postTransform (simulcast)', dumpSDP(description));
+
     // if we're running on FF, transform to Plan A first.
     if (navigator.mozGetUserMedia) {
         description = this.interop.toUnifiedPlan(description);
+        this.trace('setRemoteDescription::postTransform (Plan A)', dumpSDP(description));
     }
-    else {
-        description = APP.simulcast.transformRemoteDescription(description);
-    }
-    this.trace('setRemoteDescription::postTransform (Plan A)', dumpSDP(description));
     var self = this;
     this.peerconnection.setRemoteDescription(description,
         function () {
@@ -15551,12 +14038,19 @@ TraceablePeerConnection.prototype.createOffer = function (successCallback, failu
     this.trace('createOffer', JSON.stringify(constraints, null, ' '));
     this.peerconnection.createOffer(
         function (offer) {
-            self.trace('createOfferOnSuccess::preTransform (Plan A)', dumpSDP(offer));
+            self.trace('createOfferOnSuccess::preTransform', dumpSDP(offer));
             // if we're running on FF, transform to Plan B first.
+            // NOTE this is not tested because in meet the focus generates the
+            // offer.
             if (navigator.mozGetUserMedia) {
                 offer = self.interop.toPlanB(offer);
+                self.trace('createOfferOnSuccess::postTransform (Plan B)', dumpSDP(offer));
             }
-            self.trace('createOfferOnSuccess::postTransform (Plan B)', dumpSDP(offer));
+
+            if (config.enableSimulcast && self.simulcast.isSupported()) {
+                offer = self.simulcast.mungeLocalDescription(offer);
+                self.trace('createOfferOnSuccess::postTransform (simulcast)', dumpSDP(offer));
+            }
             successCallback(offer);
         },
         function(err) {
@@ -15572,14 +14066,16 @@ TraceablePeerConnection.prototype.createAnswer = function (successCallback, fail
     this.trace('createAnswer', JSON.stringify(constraints, null, ' '));
     this.peerconnection.createAnswer(
         function (answer) {
-            self.trace('createAnswerOnSuccess::preTransfom (Plan A)', dumpSDP(answer));
+            self.trace('createAnswerOnSuccess::preTransfom', dumpSDP(answer));
             // if we're running on FF, transform to Plan A first.
             if (navigator.mozGetUserMedia) {
                 answer = self.interop.toPlanB(answer);
-            } else {
-                answer = APP.simulcast.transformAnswer(answer);
+                self.trace('createAnswerOnSuccess::postTransfom (Plan B)', dumpSDP(answer));
             }
-            self.trace('createAnswerOnSuccess::postTransfom (Plan B)', dumpSDP(answer));
+            if (config.enableSimulcast && self.simulcast.isSupported()) {
+                answer = self.simulcast.mungeLocalDescription(answer);
+                self.trace('createAnswerOnSuccess::postTransfom (simulcast)', dumpSDP(answer));
+            }
             successCallback(answer);
         },
         function(err) {
@@ -15624,7 +14120,7 @@ TraceablePeerConnection.prototype.getStats = function(callback, errback) {
 module.exports = TraceablePeerConnection;
 
 
-},{"sdp-interop":89}],56:[function(require,module,exports){
+},{"sdp-interop":84,"sdp-simulcast":87}],51:[function(require,module,exports){
 /* global $, $iq, APP, config, connection, UI, messageHandler,
  roomName, sessionTerminated, Strophe, Util */
 var XMPPEvents = require("../../service/xmpp/XMPPEvents");
@@ -15818,6 +14314,10 @@ var Moderator = {
                 { name: 'startVideoMuted', value: config.startVideoMuted})
                 .up();
         }
+        elem.c(
+            'property',
+            { name: 'simulcastMode', value: 'rewriting'})
+            .up();
         elem.up();
         return elem;
     },
@@ -16056,7 +14556,7 @@ module.exports = Moderator;
 
 
 
-},{"../../service/authentication/AuthenticationEvents":102,"../../service/xmpp/XMPPEvents":107,"../settings/Settings":41}],57:[function(require,module,exports){
+},{"../../service/authentication/AuthenticationEvents":99,"../../service/xmpp/XMPPEvents":104,"../settings/Settings":41}],52:[function(require,module,exports){
 /* global $, $iq, config, connection, focusMucJid, messageHandler, Moderator,
    Toolbar, Util */
 var Moderator = require("./moderator");
@@ -16212,7 +14712,7 @@ var Recording = {
 }
 
 module.exports = Recording;
-},{"./moderator":56}],58:[function(require,module,exports){
+},{"./moderator":51}],53:[function(require,module,exports){
 /* jshint -W117 */
 /* a simple MUC connection plugin
  * can only handle a single MUC room
@@ -16905,7 +15405,7 @@ module.exports = function(XMPP, eventEmitter) {
 };
 
 
-},{"../../service/xmpp/XMPPEvents":107,"./JingleSession":51,"./moderator":56}],59:[function(require,module,exports){
+},{"../../service/xmpp/XMPPEvents":104,"./JingleSession":46,"./moderator":51}],54:[function(require,module,exports){
 /* jshint -W117 */
 
 var JingleSession = require("./JingleSession");
@@ -17236,8 +15736,9 @@ module.exports = function(XMPP, eventEmitter)
          */
         populateData: function () {
             var data = {};
+            var self = this;
             Object.keys(this.sessions).forEach(function (sid) {
-                var session = this.sessions[sid];
+                var session = self.sessions[sid];
                 if (session.peerconnection && session.peerconnection.updateLog) {
                     // FIXME: should probably be a .dump call
                     data["jingle_" + session.sid] = {
@@ -17253,7 +15754,7 @@ module.exports = function(XMPP, eventEmitter)
 };
 
 
-},{"../../service/xmpp/XMPPEvents":107,"./JingleSession":51}],60:[function(require,module,exports){
+},{"../../service/xmpp/XMPPEvents":104,"./JingleSession":46}],55:[function(require,module,exports){
 /* global Strophe */
 module.exports = function () {
 
@@ -17274,7 +15775,7 @@ module.exports = function () {
         }
     });
 };
-},{}],61:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 /* global $, $iq, config, connection, focusMucJid, forceMuted,
    setAudioMuted, Strophe */
 /**
@@ -17333,7 +15834,7 @@ module.exports = function (XMPP) {
         }
     });
 }
-},{}],62:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 /* jshint -W117 */
 module.exports = function() {
     Strophe.addConnectionPlugin('rayo',
@@ -17430,7 +15931,7 @@ module.exports = function() {
     );
 };
 
-},{}],63:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 /**
  * Strophe logger implementation. Logs from level WARN and above.
  */
@@ -17474,7 +15975,7 @@ module.exports = function () {
     };
 };
 
-},{}],64:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 /* global $, APP, config, Strophe*/
 var Moderator = require("./moderator");
 var EventEmitter = require("events");
@@ -18090,7 +16591,7 @@ var XMPP = {
 
 module.exports = XMPP;
 
-},{"../../service/RTC/RTCEvents":98,"../../service/RTC/StreamEventTypes":100,"../../service/UI/UIEvents":101,"../../service/xmpp/XMPPEvents":107,"../settings/Settings":41,"./SDP":52,"./moderator":56,"./recording":57,"./strophe.emuc":58,"./strophe.jingle":59,"./strophe.logger":60,"./strophe.moderate":61,"./strophe.rayo":62,"./strophe.util":63,"events":66,"pako":69,"retry":85}],65:[function(require,module,exports){
+},{"../../service/RTC/RTCEvents":95,"../../service/RTC/StreamEventTypes":97,"../../service/UI/UIEvents":98,"../../service/xmpp/XMPPEvents":104,"../settings/Settings":41,"./SDP":47,"./moderator":51,"./recording":52,"./strophe.emuc":53,"./strophe.jingle":54,"./strophe.logger":55,"./strophe.moderate":56,"./strophe.rayo":57,"./strophe.util":58,"events":62,"pako":64,"retry":80}],60:[function(require,module,exports){
 (function (process){
 /*!
  * async
@@ -19217,7 +17718,99 @@ module.exports = XMPP;
 }());
 
 }).call(this,require('_process'))
-},{"_process":67}],66:[function(require,module,exports){
+},{"_process":61}],61:[function(require,module,exports){
+// shim for using process in browser
+
+var process = module.exports = {};
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = setTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            currentQueue[queueIndex].run();
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    clearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        setTimeout(drainQueue, 0);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+// TODO(shtylman)
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],62:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -19520,99 +18113,7 @@ function isUndefined(arg) {
   return arg === void 0;
 }
 
-},{}],67:[function(require,module,exports){
-// shim for using process in browser
-
-var process = module.exports = {};
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = setTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            currentQueue[queueIndex].run();
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    clearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        setTimeout(drainQueue, 0);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-// TODO(shtylman)
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-},{}],68:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 // i18next, v1.7.7
 // Copyright (c)2014 Jan Mühlemann (jamuhl).
 // Distributed under MIT license
@@ -21735,7 +20236,7 @@ process.umask = function() { return 0; };
     i18n.options = o;
 
 })();
-},{"jquery":"jquery"}],69:[function(require,module,exports){
+},{"jquery":"jquery"}],64:[function(require,module,exports){
 // Top level file is just a mixin of submodules & constants
 'use strict';
 
@@ -21750,7 +20251,8 @@ var pako = {};
 assign(pako, deflate, inflate, constants);
 
 module.exports = pako;
-},{"./lib/deflate":70,"./lib/inflate":71,"./lib/utils/common":72,"./lib/zlib/constants":75}],70:[function(require,module,exports){
+
+},{"./lib/deflate":65,"./lib/inflate":66,"./lib/utils/common":67,"./lib/zlib/constants":70}],65:[function(require,module,exports){
 'use strict';
 
 
@@ -21770,6 +20272,7 @@ var Z_FINISH        = 4;
 
 var Z_OK            = 0;
 var Z_STREAM_END    = 1;
+var Z_SYNC_FLUSH    = 2;
 
 var Z_DEFAULT_COMPRESSION = -1;
 
@@ -21799,7 +20302,9 @@ var Z_DEFLATED  = 8;
  *
  * Compressed result, generated by default [[Deflate#onData]]
  * and [[Deflate#onEnd]] handlers. Filled after you push last chunk
- * (call [[Deflate#push]] with `Z_FINISH` / `true` param).
+ * (call [[Deflate#push]] with `Z_FINISH` / `true` param)  or if you
+ * push a chunk with explicit flush (call [[Deflate#push]] with
+ * `Z_SYNC_FLUSH` param).
  **/
 
 /**
@@ -21923,8 +20428,9 @@ var Deflate = function(options) {
  *
  * Sends input data to deflate pipe, generating [[Deflate#onData]] calls with
  * new compressed chunks. Returns `true` on success. The last data block must have
- * mode Z_FINISH (or `true`). That flush internal pending buffers and call
- * [[Deflate#onEnd]].
+ * mode Z_FINISH (or `true`). That will flush internal pending buffers and call
+ * [[Deflate#onEnd]]. For interim explicit flushes (without ending the stream) you
+ * can use mode Z_SYNC_FLUSH, keeping the compression context.
  *
  * On fail call [[Deflate#onEnd]] with error code and return false.
  *
@@ -21977,7 +20483,7 @@ Deflate.prototype.push = function(data, mode) {
       this.ended = true;
       return false;
     }
-    if (strm.avail_out === 0 || (strm.avail_in === 0 && _mode === Z_FINISH)) {
+    if (strm.avail_out === 0 || (strm.avail_in === 0 && (_mode === Z_FINISH || _mode === Z_SYNC_FLUSH))) {
       if (this.options.to === 'string') {
         this.onData(strings.buf2binstring(utils.shrinkBuf(strm.output, strm.next_out)));
       } else {
@@ -21992,6 +20498,13 @@ Deflate.prototype.push = function(data, mode) {
     this.onEnd(status);
     this.ended = true;
     return status === Z_OK;
+  }
+
+  // callback interim results if Z_SYNC_FLUSH.
+  if (_mode === Z_SYNC_FLUSH) {
+    this.onEnd(Z_OK);
+    strm.avail_out = 0;
+    return true;
   }
 
   return true;
@@ -22017,8 +20530,9 @@ Deflate.prototype.onData = function(chunk) {
  * - status (Number): deflate status. 0 (Z_OK) on success,
  *   other if not.
  *
- * Called once after you tell deflate that input stream complete
- * or error happenned. By default - join collected chunks,
+ * Called once after you tell deflate that the input stream is
+ * complete (Z_FINISH) or should be flushed (Z_SYNC_FLUSH)
+ * or if an error happened. By default - join collected chunks,
  * free memory and fill `results` / `err` properties.
  **/
 Deflate.prototype.onEnd = function(status) {
@@ -22115,7 +20629,8 @@ exports.Deflate = Deflate;
 exports.deflate = deflate;
 exports.deflateRaw = deflateRaw;
 exports.gzip = gzip;
-},{"./utils/common":72,"./utils/strings":73,"./zlib/deflate.js":77,"./zlib/messages":82,"./zlib/zstream":84}],71:[function(require,module,exports){
+
+},{"./utils/common":67,"./utils/strings":68,"./zlib/deflate.js":72,"./zlib/messages":77,"./zlib/zstream":79}],66:[function(require,module,exports){
 'use strict';
 
 
@@ -22148,7 +20663,9 @@ var toString = Object.prototype.toString;
  *
  * Uncompressed result, generated by default [[Inflate#onData]]
  * and [[Inflate#onEnd]] handlers. Filled after you push last chunk
- * (call [[Inflate#push]] with `Z_FINISH` / `true` param).
+ * (call [[Inflate#push]] with `Z_FINISH` / `true` param) or if you
+ * push a chunk with explicit flush (call [[Inflate#push]] with
+ * `Z_SYNC_FLUSH` param).
  **/
 
 /**
@@ -22268,8 +20785,9 @@ var Inflate = function(options) {
  *
  * Sends input data to inflate pipe, generating [[Inflate#onData]] calls with
  * new output chunks. Returns `true` on success. The last data block must have
- * mode Z_FINISH (or `true`). That flush internal pending buffers and call
- * [[Inflate#onEnd]].
+ * mode Z_FINISH (or `true`). That will flush internal pending buffers and call
+ * [[Inflate#onEnd]]. For interim explicit flushes (without ending the stream) you
+ * can use mode Z_SYNC_FLUSH, keeping the decompression context.
  *
  * On fail call [[Inflate#onEnd]] with error code and return false.
  *
@@ -22325,7 +20843,7 @@ Inflate.prototype.push = function(data, mode) {
     }
 
     if (strm.next_out) {
-      if (strm.avail_out === 0 || status === c.Z_STREAM_END || (strm.avail_in === 0 && _mode === c.Z_FINISH)) {
+      if (strm.avail_out === 0 || status === c.Z_STREAM_END || (strm.avail_in === 0 && (_mode === c.Z_FINISH || _mode === c.Z_SYNC_FLUSH))) {
 
         if (this.options.to === 'string') {
 
@@ -22351,12 +20869,20 @@ Inflate.prototype.push = function(data, mode) {
   if (status === c.Z_STREAM_END) {
     _mode = c.Z_FINISH;
   }
+
   // Finalize on the last chunk.
   if (_mode === c.Z_FINISH) {
     status = zlib_inflate.inflateEnd(this.strm);
     this.onEnd(status);
     this.ended = true;
     return status === c.Z_OK;
+  }
+
+  // callback interim results if Z_SYNC_FLUSH.
+  if (_mode === c.Z_SYNC_FLUSH) {
+    this.onEnd(c.Z_OK);
+    strm.avail_out = 0;
+    return true;
   }
 
   return true;
@@ -22382,8 +20908,9 @@ Inflate.prototype.onData = function(chunk) {
  * - status (Number): inflate status. 0 (Z_OK) on success,
  *   other if not.
  *
- * Called once after you tell inflate that input stream complete
- * or error happenned. By default - join collected chunks,
+ * Called either after you tell inflate that the input stream is
+ * complete (Z_FINISH) or should be flushed (Z_SYNC_FLUSH)
+ * or if an error happened. By default - join collected chunks,
  * free memory and fill `results` / `err` properties.
  **/
 Inflate.prototype.onEnd = function(status) {
@@ -22484,7 +21011,7 @@ exports.inflate = inflate;
 exports.inflateRaw = inflateRaw;
 exports.ungzip  = inflate;
 
-},{"./utils/common":72,"./utils/strings":73,"./zlib/constants":75,"./zlib/gzheader":78,"./zlib/inflate.js":80,"./zlib/messages":82,"./zlib/zstream":84}],72:[function(require,module,exports){
+},{"./utils/common":67,"./utils/strings":68,"./zlib/constants":70,"./zlib/gzheader":73,"./zlib/inflate.js":75,"./zlib/messages":77,"./zlib/zstream":79}],67:[function(require,module,exports){
 'use strict';
 
 
@@ -22499,7 +21026,7 @@ exports.assign = function (obj /*from1, from2, from3, ...*/) {
     var source = sources.shift();
     if (!source) { continue; }
 
-    if (typeof(source) !== 'object') {
+    if (typeof source !== 'object') {
       throw new TypeError(source + 'must be non-object');
     }
 
@@ -22530,7 +21057,7 @@ var fnTyped = {
       return;
     }
     // Fallback to ordinary array
-    for(var i=0; i<len; i++) {
+    for (var i=0; i<len; i++) {
       dest[dest_offs + i] = src[src_offs + i];
     }
   },
@@ -22559,7 +21086,7 @@ var fnTyped = {
 
 var fnUntyped = {
   arraySet: function (dest, src, src_offs, len, dest_offs) {
-    for(var i=0; i<len; i++) {
+    for (var i=0; i<len; i++) {
       dest[dest_offs + i] = src[src_offs + i];
     }
   },
@@ -22587,7 +21114,8 @@ exports.setTyped = function (on) {
 };
 
 exports.setTyped(TYPED_OK);
-},{}],73:[function(require,module,exports){
+
+},{}],68:[function(require,module,exports){
 // String encode/decode helpers
 'use strict';
 
@@ -22611,8 +21139,8 @@ try { String.fromCharCode.apply(null, new Uint8Array(1)); } catch(__) { STR_APPL
 // Note, that 5 & 6-byte values and some 4-byte values can not be represented in JS,
 // because max possible codepoint is 0x10ffff
 var _utf8len = new utils.Buf8(256);
-for (var i=0; i<256; i++) {
-  _utf8len[i] = (i >= 252 ? 6 : i >= 248 ? 5 : i >= 240 ? 4 : i >= 224 ? 3 : i >= 192 ? 2 : 1);
+for (var q=0; q<256; q++) {
+  _utf8len[q] = (q >= 252 ? 6 : q >= 248 ? 5 : q >= 240 ? 4 : q >= 224 ? 3 : q >= 192 ? 2 : 1);
 }
 _utf8len[254]=_utf8len[254]=1; // Invalid sequence start
 
@@ -22681,7 +21209,7 @@ function buf2binstring(buf, len) {
   }
 
   var result = '';
-  for(var i=0; i < len; i++) {
+  for (var i=0; i < len; i++) {
     result += String.fromCharCode(buf[i]);
   }
   return result;
@@ -22697,7 +21225,7 @@ exports.buf2binstring = function(buf) {
 // Convert binary string (typed, when possible)
 exports.binstring2buf = function(str) {
   var buf = new utils.Buf8(str.length);
-  for(var i=0, len=buf.length; i < len; i++) {
+  for (var i=0, len=buf.length; i < len; i++) {
     buf[i] = str.charCodeAt(i);
   }
   return buf;
@@ -22774,7 +21302,7 @@ exports.utf8border = function(buf, max) {
   return (pos + _utf8len[buf[pos]] > max) ? pos : max;
 };
 
-},{"./common":72}],74:[function(require,module,exports){
+},{"./common":67}],69:[function(require,module,exports){
 'use strict';
 
 // Note: adler32 takes 12% for level 0 and 2% for level 6.
@@ -22782,9 +21310,9 @@ exports.utf8border = function(buf, max) {
 // Small size is preferable.
 
 function adler32(adler, buf, len, pos) {
-  var s1 = (adler & 0xffff) |0
-    , s2 = ((adler >>> 16) & 0xffff) |0
-    , n = 0;
+  var s1 = (adler & 0xffff) |0,
+      s2 = ((adler >>> 16) & 0xffff) |0,
+      n = 0;
 
   while (len !== 0) {
     // Set limit ~ twice less than 5552, to keep
@@ -22807,7 +21335,8 @@ function adler32(adler, buf, len, pos) {
 
 
 module.exports = adler32;
-},{}],75:[function(require,module,exports){
+
+},{}],70:[function(require,module,exports){
 module.exports = {
 
   /* Allowed flush values; see deflate() and inflate() below for details */
@@ -22855,7 +21384,8 @@ module.exports = {
   Z_DEFLATED:               8
   //Z_NULL:                 null // Use -1 or null inline, depending on var type
 };
-},{}],76:[function(require,module,exports){
+
+},{}],71:[function(require,module,exports){
 'use strict';
 
 // Note: we can't get significant speed boost here.
@@ -22867,9 +21397,9 @@ module.exports = {
 function makeTable() {
   var c, table = [];
 
-  for(var n =0; n < 256; n++){
+  for (var n =0; n < 256; n++) {
     c = n;
-    for(var k =0; k < 8; k++){
+    for (var k =0; k < 8; k++) {
       c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
     }
     table[n] = c;
@@ -22883,12 +21413,12 @@ var crcTable = makeTable();
 
 
 function crc32(crc, buf, len, pos) {
-  var t = crcTable
-    , end = pos + len;
+  var t = crcTable,
+      end = pos + len;
 
   crc = crc ^ (-1);
 
-  for (var i = pos; i < end; i++ ) {
+  for (var i = pos; i < end; i++) {
     crc = (crc >>> 8) ^ t[(crc ^ buf[i]) & 0xFF];
   }
 
@@ -22897,7 +21427,8 @@ function crc32(crc, buf, len, pos) {
 
 
 module.exports = crc32;
-},{}],77:[function(require,module,exports){
+
+},{}],72:[function(require,module,exports){
 'use strict';
 
 var utils   = require('../utils/common');
@@ -24434,7 +22965,7 @@ function deflate(strm, flush) {
         put_byte(s, val);
       } while (val !== 0);
 
-      if (s.gzhead.hcrc && s.pending > beg){
+      if (s.gzhead.hcrc && s.pending > beg) {
         strm.adler = crc32(strm.adler, s.pending_buf, s.pending - beg, beg);
       }
       if (val === 0) {
@@ -24663,7 +23194,8 @@ exports.deflatePending = deflatePending;
 exports.deflatePrime = deflatePrime;
 exports.deflateTune = deflateTune;
 */
-},{"../utils/common":72,"./adler32":74,"./crc32":76,"./messages":82,"./trees":83}],78:[function(require,module,exports){
+
+},{"../utils/common":67,"./adler32":69,"./crc32":71,"./messages":77,"./trees":78}],73:[function(require,module,exports){
 'use strict';
 
 
@@ -24683,7 +23215,7 @@ function GZheader() {
                        // but leave for few code modifications
 
   //
-  // Setup limits is not necessary because in js we should not preallocate memory 
+  // Setup limits is not necessary because in js we should not preallocate memory
   // for inflate use constant limit in 65536 bytes
   //
 
@@ -24704,7 +23236,8 @@ function GZheader() {
 }
 
 module.exports = GZheader;
-},{}],79:[function(require,module,exports){
+
+},{}],74:[function(require,module,exports){
 'use strict';
 
 // See state defs from inflate.js
@@ -25031,7 +23564,7 @@ module.exports = function inflate_fast(strm, start) {
   return;
 };
 
-},{}],80:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 'use strict';
 
 
@@ -26535,7 +25068,8 @@ exports.inflateSync = inflateSync;
 exports.inflateSyncPoint = inflateSyncPoint;
 exports.inflateUndermine = inflateUndermine;
 */
-},{"../utils/common":72,"./adler32":74,"./crc32":76,"./inffast":79,"./inftrees":81}],81:[function(require,module,exports){
+
+},{"../utils/common":67,"./adler32":69,"./crc32":71,"./inffast":74,"./inftrees":76}],76:[function(require,module,exports){
 'use strict';
 
 
@@ -26732,18 +25266,20 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
   // poor man optimization - use if-else instead of switch,
   // to avoid deopts in old v8
   if (type === CODES) {
-      base = extra = work;    /* dummy value--not used */
-      end = 19;
+    base = extra = work;    /* dummy value--not used */
+    end = 19;
+
   } else if (type === LENS) {
-      base = lbase;
-      base_index -= 257;
-      extra = lext;
-      extra_index -= 257;
-      end = 256;
+    base = lbase;
+    base_index -= 257;
+    extra = lext;
+    extra_index -= 257;
+    end = 256;
+
   } else {                    /* DISTS */
-      base = dbase;
-      extra = dext;
-      end = -1;
+    base = dbase;
+    extra = dext;
+    end = -1;
   }
 
   /* initialize opts for loop */
@@ -26862,7 +25398,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
   return 0;
 };
 
-},{"../utils/common":72}],82:[function(require,module,exports){
+},{"../utils/common":67}],77:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -26876,7 +25412,8 @@ module.exports = {
   '-5':   'buffer error',        /* Z_BUF_ERROR     (-5) */
   '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
 };
-},{}],83:[function(require,module,exports){
+
+},{}],78:[function(require,module,exports){
 'use strict';
 
 
@@ -27310,7 +25847,7 @@ function tr_static_init() {
   }
   //Assert (dist == 256, "tr_static_init: dist != 256");
   dist >>= 7; /* from now on, all distances are divided by 128 */
-  for ( ; code < D_CODES; code++) {
+  for (; code < D_CODES; code++) {
     base_dist[code] = dist << 7;
     for (n = 0; n < (1<<(extra_dbits[code]-7)); n++) {
       _dist_code[256 + dist++] = code;
@@ -28076,7 +26613,8 @@ exports._tr_stored_block = _tr_stored_block;
 exports._tr_flush_block  = _tr_flush_block;
 exports._tr_tally = _tr_tally;
 exports._tr_align = _tr_align;
-},{"../utils/common":72}],84:[function(require,module,exports){
+
+},{"../utils/common":67}],79:[function(require,module,exports){
 'use strict';
 
 
@@ -28106,9 +26644,10 @@ function ZStream() {
 }
 
 module.exports = ZStream;
-},{}],85:[function(require,module,exports){
+
+},{}],80:[function(require,module,exports){
 module.exports = require('./lib/retry');
-},{"./lib/retry":86}],86:[function(require,module,exports){
+},{"./lib/retry":81}],81:[function(require,module,exports){
 var RetryOperation = require('./retry_operation');
 
 exports.operation = function(options) {
@@ -28159,7 +26698,7 @@ exports._createTimeout = function(attempt, opts) {
 
   return timeout;
 };
-},{"./retry_operation":87}],87:[function(require,module,exports){
+},{"./retry_operation":82}],82:[function(require,module,exports){
 function RetryOperation(timeouts) {
   this._timeouts = timeouts;
   this._fn = null;
@@ -28269,7 +26808,7 @@ RetryOperation.prototype.mainError = function() {
 
   return mainError;
 };
-},{}],88:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 module.exports = function arrayEquals(array) {
     // if the other array is a falsy value, return
     if (!array)
@@ -28295,10 +26834,10 @@ module.exports = function arrayEquals(array) {
 }
 
 
-},{}],89:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 exports.Interop = require('./interop');
 
-},{"./interop":90}],90:[function(require,module,exports){
+},{"./interop":85}],85:[function(require,module,exports){
 "use strict";
 
 var transform = require('./transform');
@@ -28880,7 +27419,7 @@ Interop.prototype.toUnifiedPlan = function(desc) {
     //#endregion
 };
 
-},{"./array-equals":88,"./transform":91}],91:[function(require,module,exports){
+},{"./array-equals":83,"./transform":86}],86:[function(require,module,exports){
 var transform = require('sdp-transform');
 
 exports.write = function(session, opts) {
@@ -28979,7 +27518,460 @@ exports.parse = function(sdp) {
 };
 
 
-},{"sdp-transform":93}],92:[function(require,module,exports){
+},{"sdp-transform":90}],87:[function(require,module,exports){
+var transform = require('sdp-transform');
+var transformUtils = require('./transform-utils');
+var parseSsrcs = transformUtils.parseSsrcs;
+var writeSsrcs = transformUtils.writeSsrcs;
+
+//region Constants
+
+var DEFAULT_NUM_OF_LAYERS = 3;
+
+//endregion
+
+//region Ctor
+
+function Simulcast(options) {
+
+    this.options = options ? options : {};
+
+    if (!this.options.numOfLayers) {
+        this.options.numOfLayers = DEFAULT_NUM_OF_LAYERS;
+    }
+
+    this.layers = [];
+}
+
+//endregion
+
+//region Stateless private utility functions
+
+/**
+ * Returns a random integer between min (included) and max (excluded)
+ * Using Math.round() gives a non-uniform distribution!
+ * @returns {number}
+ */
+function generateSSRC() {
+    var min = 0, max = 0xffffffff;
+    return Math.floor(Math.random() * (max - min)) + min;
+};
+
+function processVideo(session, action) {
+    if (session == null || !Array.isArray(session.media)) {
+        return;
+    }
+
+    session.media.forEach(function (mLine) {
+        if (mLine.type === 'video') {
+            action(mLine);
+        }
+    });
+}
+
+function validateDescription(desc)
+{
+    return desc && desc != null
+        && desc.type && desc.type != ''
+        && desc.sdp && desc.sdp != '';
+}
+
+function explodeRemoteSimulcast(mLine) {
+
+    if (!mLine || !Array.isArray(mLine.ssrcGroups)) {
+        return;
+    }
+
+    var sources = parseSsrcs(mLine);
+    var order = [];
+
+    // Find the SIM group and explode its sources.
+    var j = mLine.ssrcGroups.length;
+    while (j--) {
+
+        if (mLine.ssrcGroups[j].semantics !== 'SIM') {
+            continue;
+        }
+
+        var simulcastSsrcs = mLine.ssrcGroups[j].ssrcs.split(' ');
+
+        for (var i = 0; i < simulcastSsrcs.length; i++) {
+
+            var ssrc = simulcastSsrcs[i];
+            order.push(ssrc);
+
+            var parts = sources[ssrc].msid.split(' ');
+            sources[ssrc].msid = [parts[0], '/', i, ' ', parts[1], '/', i].join('');
+            sources[ssrc].cname = [sources[ssrc].cname, '/', i].join('');
+
+            // Remove all the groups that this SSRC participates in.
+            mLine.ssrcGroups.forEach(function (relatedGroup) {
+                if (relatedGroup.semantics === 'SIM') {
+                    return;
+                }
+
+                var relatedSsrcs = relatedGroup.ssrcs.split(' ');
+                if (relatedSsrcs.indexOf(ssrc) === -1) {
+                    return;
+                }
+
+                // Nuke all the related SSRCs.
+                relatedSsrcs.forEach(function (relatedSSRC) {
+                    sources[relatedSSRC].msid = sources[ssrc].msid;
+                    sources[relatedSSRC].cname = sources[ssrc].cname;
+                    if (relatedSSRC !== ssrc) {
+                        order.push(relatedSSRC);
+                    }
+                });
+
+                // Schedule the related group for nuking.
+            })
+        }
+
+        mLine.ssrcs = writeSsrcs(sources, order);
+        mLine.ssrcGroups.splice(j, 1);
+    };
+}
+
+function squeezeRemoteSimulcast(mLine) {
+
+    if (!mLine || !Array.isArray(mLine.ssrcGroups)) {
+        return;
+    }
+
+    var sources = parseSsrcs(mLine);
+
+    // Find the SIM group and nuke it.
+    mLine.ssrcGroups.some(function (simulcastGroup) {
+        if (simulcastGroup.semantics !== 'SIM') {
+            return false;
+        }
+
+        // Schedule the SIM group for nuking.
+        simulcastGroup.nuke = true;
+
+        var simulcastSsrcs = simulcastGroup.ssrcs.split(' ');
+
+        // Nuke all the higher layer SSRCs.
+        for (var i = 1; i < simulcastSsrcs.length; i++) {
+
+            var ssrc = simulcastSsrcs[i];
+            delete sources[ssrc];
+
+            // Remove all the groups that this SSRC participates in.
+            mLine.ssrcGroups.forEach(function (relatedGroup) {
+                if (relatedGroup.semantics === 'SIM') {
+                    return;
+                }
+
+                var relatedSsrcs = relatedGroup.ssrcs.split(' ');
+                if (relatedSsrcs.indexOf(ssrc) === -1) {
+                    return;
+                }
+
+                // Nuke all the related SSRCs.
+                relatedSsrcs.forEach(function (relatedSSRC) {
+                    delete sources[relatedSSRC];
+                });
+
+                // Schedule the related group for nuking.
+                relatedGroup.nuke = true;
+            })
+        }
+
+        return true;
+    });
+
+    mLine.ssrcs = writeSsrcs(sources);
+
+    // Nuke all the scheduled groups.
+    var i = mLine.ssrcGroups.length;
+    while (i--) {
+        if (mLine.ssrcGroups[i].nuke) {
+            mLine.ssrcGroups.splice(i, 1);
+        }
+    }
+}
+
+function removeGoogConference(mLine) {
+    if (!mLine || !Array.isArray(mLine.invalid)) {
+        return;
+    }
+
+    var i = mLine.invalid.length;
+    while (i--) {
+        if (mLine.invalid[i].value == 'x-google-flag:conference') {
+            mLine.invalid.splice(i, 1);
+        }
+    }
+}
+
+function assertGoogConference(mLine) {
+    if (!mLine) {
+        return;
+    }
+
+    if (!Array.isArray(mLine.invalid)) {
+        mLine.invalid = [];
+    }
+
+    if (!mLine.invalid.some(
+            function (i) { return i.value === 'x-google-flag:conference' })) {
+        mLine.invalid.push({'value': 'x-google-flag:conference'});
+    }
+}
+
+//endregion
+
+//region "Private" functions
+
+/**
+ *
+ * @param mLine
+ * @private
+ */
+Simulcast.prototype._maybeInitializeLayers = function(mLine) {
+
+    if (!mLine || mLine.type !== 'video') {
+        return;
+    }
+
+    var sources = parseSsrcs(mLine);
+
+    if (Object.keys(sources).length === 0) {
+
+        // no sources, disable simulcast.
+        if (this.layers.length !== 0) {
+            this.layers = [];
+        }
+
+        return;
+    }
+
+    // find the base layer (we'll reuse its msid and cname).
+    var baseLayerSSRC = Object.keys(sources)[0];
+    var baseLayer = sources[baseLayerSSRC];
+
+    // todo(gp) handle screen sharing.
+
+    // check if base CNAME has changed and reinitialise layers.
+    if (this.layers.length > 0
+        && sources[baseLayerSSRC].cname !== this.layers[0].cname) {
+        this.layers = [];
+    }
+
+    // (re)initialise layers
+    if (this.layers.length < 1) {
+
+        // first push the base layer.
+        this.layers.push({
+            ssrc: baseLayerSSRC,
+            msid: baseLayer.msid,
+            cname: baseLayer.cname
+        });
+
+        var rtx = false; // RFC 4588
+        if (Array.isArray(mLine.rtp)) {
+            rtx = mLine.rtp.some(
+                function (rtpmap) { return rtpmap.codec === 'rtx'; });
+        }
+
+        if (rtx) {
+            this.layers[0].rtx = generateSSRC();
+        }
+
+        // now push additional layers.
+        for (var i = 1; i < Math.max(1, this.options.numOfLayers); i++) {
+
+            var layer = { ssrc: generateSSRC() };
+            if (rtx) {
+                layer.rtx = generateSSRC();
+            }
+
+            this.layers.push(layer);
+        }
+    }
+};
+
+/**
+ *
+ * @param mLine
+ * @private
+ */
+Simulcast.prototype._restoreSimulcastView = function(mLine) {
+    if (mLine && mLine.type === 'video' && this.layers.length !== 0) {
+
+        var sources = {};
+
+        var msid = this.layers[0].msid;
+        var cname = this.layers[0].cname;
+        var simulcastSsrcs = [];
+        var ssrcGroups = [];
+
+        for (var i = 0; i < this.layers.length; i++) {
+            var layer = this.layers[i];
+
+            sources[layer.ssrc] = { msid: msid, cname: cname };
+            simulcastSsrcs.push(layer.ssrc);
+
+            if (layer.rtx) {
+
+                sources[layer.rtx] = {
+                    msid: msid,
+                    cname: cname
+                }
+
+                ssrcGroups.push({
+                    semantics: 'FID',
+                    ssrcs: [layer.ssrc, layer.rtx].join(' ')
+                });
+            }
+        }
+
+        ssrcGroups.push({
+            semantics: 'SIM',
+            ssrcs: simulcastSsrcs.join(' ')
+        });
+
+        mLine.ssrcGroups = ssrcGroups;
+        mLine.ssrcs = writeSsrcs(sources);
+    }
+}
+
+//endregion
+
+//region "Public" functions
+
+Simulcast.prototype.isSupported = function () {
+    return window.chrome;
+
+    // TODO this needs improvements. For example I doubt that Chrome in Android
+    // has simulcast support. Also, only recent versions of Chromium have native
+    // simulcast support.
+}
+
+/**
+ *
+ * @param desc
+ * @returns {RTCSessionDescription}
+ */
+Simulcast.prototype.mungeRemoteDescription = function (desc) {
+
+    if (!validateDescription(desc)) {
+        return desc;
+    }
+
+    var session = transform.parse(desc.sdp);
+
+    var self = this;
+    processVideo(session, function (mLine) {
+
+        // Handle simulcast reception.
+        if (self.options.explodeRemoteSimulcast) {
+            explodeRemoteSimulcast(mLine);
+        } else {
+            squeezeRemoteSimulcast(mLine);
+        }
+
+        // If native simulcast is enabled, we must append the x-goog-conference
+        // attribute to the SDP.
+        if (self.layers.length < 1) {
+            removeGoogConference(mLine);
+        } else {
+            assertGoogConference(mLine);
+        }
+    });
+
+    return new RTCSessionDescription({
+        type: desc.type,
+        sdp: transform.write(session)
+    });
+};
+
+/**
+ *
+ * @param desc
+ * @returns {RTCSessionDescription}
+ */
+Simulcast.prototype.mungeLocalDescription = function (desc) {
+
+    if (!validateDescription(desc) || !this.isSupported()) {
+        return desc;
+    }
+
+    var session = transform.parse(desc.sdp);
+
+    var self = this;
+    processVideo(session, function (mLine) {
+        // Initialize native simulcast layers, if not already done.
+        self._maybeInitializeLayers(mLine);
+
+        // Update the SDP with the simulcast layers.
+        self._restoreSimulcastView(mLine);
+    });
+
+    return new RTCSessionDescription({
+        type: desc.type,
+        sdp: transform.write(session)
+    });
+};
+
+//endregion
+
+module.exports = Simulcast;
+
+},{"./transform-utils":88,"sdp-transform":90}],88:[function(require,module,exports){
+exports.writeSsrcs = function(sources, order) {
+  var ssrcs = [];
+
+  // expand sources to ssrcs
+  if (typeof sources !== 'undefined' &&
+      Object.keys(sources).length !== 0) {
+
+    if (Array.isArray(order)) {
+      for (var i = 0; i < order.length; i++) {
+        var ssrc = order[i];
+        var source = sources[ssrc];
+        Object.keys(source).forEach(function (attribute) {
+          ssrcs.push({
+            id: ssrc,
+            attribute: attribute,
+            value: source[attribute]
+          });
+        });
+      }
+    } else {
+      Object.keys(sources).forEach(function (ssrc) {
+        var source = sources[ssrc];
+        Object.keys(source).forEach(function (attribute) {
+          ssrcs.push({
+            id: ssrc,
+            attribute: attribute,
+            value: source[attribute]
+          });
+        });
+      });
+    }
+  }
+
+  return ssrcs;
+};
+
+exports.parseSsrcs = function (mLine) {
+  var sources = {};
+  // group sources attributes by ssrc.
+  if (typeof mLine.ssrcs !== 'undefined' && Array.isArray(mLine.ssrcs)) {
+    mLine.ssrcs.forEach(function (ssrc) {
+      if (!sources[ssrc.id])
+        sources[ssrc.id] = {};
+      sources[ssrc.id][ssrc.attribute] = ssrc.value;
+    });
+  }
+  return sources;
+};
+
+
+},{}],89:[function(require,module,exports){
 var grammar = module.exports = {
   v: [{
       name: 'version',
@@ -29228,7 +28220,7 @@ Object.keys(grammar).forEach(function (key) {
   });
 });
 
-},{}],93:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 var parser = require('./parser');
 var writer = require('./writer');
 
@@ -29238,7 +28230,7 @@ exports.parseFmtpConfig = parser.parseFmtpConfig;
 exports.parsePayloads = parser.parsePayloads;
 exports.parseRemoteCandidates = parser.parseRemoteCandidates;
 
-},{"./parser":94,"./writer":95}],94:[function(require,module,exports){
+},{"./parser":91,"./writer":92}],91:[function(require,module,exports){
 var toIntIfInt = function (v) {
   return String(Number(v)) === v ? Number(v) : v;
 };
@@ -29333,7 +28325,7 @@ exports.parseRemoteCandidates = function (str) {
   return candidates;
 };
 
-},{"./grammar":92}],95:[function(require,module,exports){
+},{"./grammar":89}],92:[function(require,module,exports){
 var grammar = require('./grammar');
 
 // customized util.format - discards excess arguments and can void middle ones
@@ -29449,14 +28441,14 @@ module.exports = function (session, opts) {
   return sdp.join('\r\n') + '\r\n';
 };
 
-},{"./grammar":92}],96:[function(require,module,exports){
+},{"./grammar":89}],93:[function(require,module,exports){
 var MediaStreamType = {
     VIDEO_TYPE: "Video",
 
     AUDIO_TYPE: "Audio"
 };
 module.exports = MediaStreamType;
-},{}],97:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 var RTCBrowserType = {
     RTC_BROWSER_CHROME: "rtc_browser.chrome",
 
@@ -29464,20 +28456,16 @@ var RTCBrowserType = {
 };
 
 module.exports = RTCBrowserType;
-},{}],98:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
 var RTCEvents = {
     LASTN_CHANGED: "rtc.lastn_changed",
     DOMINANTSPEAKER_CHANGED: "rtc.dominantspeaker_changed",
     LASTN_ENDPOINT_CHANGED: "rtc.lastn_endpoint_changed",
-    SIMULCAST_LAYER_CHANGED: "rtc.simulcast_layer_changed",
-    SIMULCAST_LAYER_CHANGING: "rtc.simulcast_layer_changing",
-    SIMULCAST_START: "rtc.simlcast_start",
-    SIMULCAST_STOP: "rtc.simlcast_stop",
     AVAILABLE_DEVICES_CHANGED: "rtc.available_devices_changed"
 };
 
 module.exports = RTCEvents;
-},{}],99:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 var Resolutions = {
     "1080": {
         width: 1920,
@@ -29531,7 +28519,7 @@ var Resolutions = {
     }
 };
 module.exports = Resolutions;
-},{}],100:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 var StreamEventTypes = {
     EVENT_TYPE_LOCAL_CREATED: "stream.local_created",
 
@@ -29547,14 +28535,14 @@ var StreamEventTypes = {
 };
 
 module.exports = StreamEventTypes;
-},{}],101:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 var UIEvents = {
     NICKNAME_CHANGED: "UI.nickname_changed",
     SELECTED_ENDPOINT: "UI.selected_endpoint",
     PINNED_ENDPOINT: "UI.pinned_endpoint"
 };
 module.exports = UIEvents;
-},{}],102:[function(require,module,exports){
+},{}],99:[function(require,module,exports){
 var AuthenticationEvents = {
     /**
      * Event callback arguments:
@@ -29568,7 +28556,7 @@ var AuthenticationEvents = {
 };
 module.exports = AuthenticationEvents;
 
-},{}],103:[function(require,module,exports){
+},{}],100:[function(require,module,exports){
 var CQEvents = {
     LOCALSTATS_UPDATED: "cq.localstats_updated",
     REMOTESTATS_UPDATED: "cq.remotestats_updated",
@@ -29576,7 +28564,7 @@ var CQEvents = {
 };
 
 module.exports = CQEvents;
-},{}],104:[function(require,module,exports){
+},{}],101:[function(require,module,exports){
 var DesktopSharingEventTypes = {
     INIT: "ds.init",
 
@@ -29586,14 +28574,14 @@ var DesktopSharingEventTypes = {
 };
 
 module.exports = DesktopSharingEventTypes;
-},{}],105:[function(require,module,exports){
+},{}],102:[function(require,module,exports){
 var Events = {
     DTMF_SUPPORT_CHANGED: "members.dtmf_support_changed"
 };
 
 module.exports = Events;
 
-},{}],106:[function(require,module,exports){
+},{}],103:[function(require,module,exports){
 module.exports = {
     getLanguages : function () {
         var languages = [];
@@ -29610,7 +28598,7 @@ module.exports = {
     TR: "tr",
     FR: "fr"
 }
-},{}],107:[function(require,module,exports){
+},{}],104:[function(require,module,exports){
 var XMPPEvents = {
     CONNECTION_FAILED: "xmpp.connection.failed",
     CONFERENCE_CREATED: "xmpp.conferenceCreated.jingle",
