@@ -18,7 +18,7 @@ var shortcuts = {
     84: {
         character: "T",
         function: function() {
-            if(!APP.RTC.localAudio.isMuted()) {
+            if(!(APP.RTC && APP.RTC.localAudio && APP.RTC.localAudio.isMuted())) {
                 APP.UI.toggleAudio();
             }
         }
@@ -56,7 +56,7 @@ var KeyboardShortcut = {
                 $(":focus").is("input[type=password]") ||
                 $(":focus").is("textarea"))) {
                 if(e.which === "T".charCodeAt(0)) {
-                    if(APP.RTC.localAudio.isMuted()) {
+                    if(APP.RTC && APP.RTC.localAudio && APP.RTC.localAudio.isMuted()) {
                         APP.UI.toggleAudio();
                     }
                 }

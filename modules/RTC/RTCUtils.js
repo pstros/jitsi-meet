@@ -210,11 +210,48 @@ function RTCUtils(RTCService)
                 return this.audioTracks;
             };
         }
-    }
-    else
-    {
+    } else if (window.rtcninja) {
+      try { console.log('This appears to be an rtcninja platform'); } catch (e) { }
+      if (!rtcninja.called) {
+        var rtcninjaOptions = {};
+        if (window.cordova && window.cordova.plugins && window.cordova.plugins.iosrtc && window.cordova.plugins.iosrtc.rtcninjaPlugin) {
+          rtcninjaOptions = {plugin: cordova.plugins.iosrtc.rtcninjaPlugin};
+        }
+        rtcninja(options);
+      }
+      if (rtcninja.hasWebRTC()) {
+        this.peerconnection = rtcninja.RTCPeerConnection;
+        this.browser = RTCBrowserType.RTC_BROWSER_RTCNINJA;
+        this.getUserMedia = rtcninja.getUserMedia.bind(navigator);
+        RTCSessionDescription = rtcninja.RTCSessionDescription;
+        RTCIceCandidate = rtcninja.RTCIceCandidate;
+        this.attachMediaStream = function(element, stream) {
+          if(!element[0])
+            return;
+          rtcninja.attachMediaStream(element[0], stream);
+        }
+        this.pc_constraints = {};
+        this.getStreamID = function (stream) {
+          // streams from FF endpoints have the characters '{' and '}'
+          // that make jQuery choke.
+          // Copied from Chrome above, Safari has Chrome style streams
+          if (stream.id) {
+            return stream.id.replace(/[\{,\}]/g, "");
+          }
+        };
+        this.getVideoSrc = function (element) {
+          if (!element)
+            return null;
+          return element.getAttribute("src");
+        };
+        this.setVideoSrc = function (element, src) {
+          if (element) {
+            element.setAttribute("src", src);
+          }
+        };
+      }
+    } else {
         try { console.log('Browser does not appear to be WebRTC-capable'); } catch (e) { }
-
         window.location.href = 'unsupported_browser.html';
         return;
     }
@@ -409,8 +446,7 @@ RTCUtils.prototype.handleLocalStream = function(stream, usageOptions)
     // If this is FF, the stream parameter is *not* a MediaStream object, it's
     // an object with two properties: audioStream, videoStream.
     var audioStream, videoStream;
-    if(window.webkitMediaStream)
-    {
+    if(this.browser === RTCBrowserType.RTC_BROWSER_CHROME) {
         audioStream = new webkitMediaStream();
         videoStream = new webkitMediaStream();
         if(stream) {
@@ -426,11 +462,17 @@ RTCUtils.prototype.handleLocalStream = function(stream, usageOptions)
                 videoStream.addTrack(videoTracks[i]);
             }
         }
-    }
-    else
-    {//firefox
+    } else if(this.browser === RTCBrowserType.RTC_BROWSER_RTCNINJA) {
+      if(stream) {
+        audioStream = stream;
+        videoStream = stream;
+      }
+    } else {
+      //firefox
+      if(stream) {
         audioStream = stream.audioStream;
         videoStream = stream.videoStream;
+      }
     }
 
     var audioMuted = (usageOptions && usageOptions.audio === false),

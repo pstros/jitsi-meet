@@ -1226,11 +1226,48 @@ function RTCUtils(RTCService)
                 return this.audioTracks;
             };
         }
-    }
-    else
-    {
+    } else if (window.rtcninja) {
+      try { console.log('This appears to be an rtcninja platform'); } catch (e) { }
+      if (!rtcninja.called) {
+        var rtcninjaOptions = {};
+        if (window.cordova && window.cordova.plugins && window.cordova.plugins.iosrtc && window.cordova.plugins.iosrtc.rtcninjaPlugin) {
+          rtcninjaOptions = {plugin: cordova.plugins.iosrtc.rtcninjaPlugin};
+        }
+        rtcninja(options);
+      }
+      if (rtcninja.hasWebRTC()) {
+        this.peerconnection = rtcninja.RTCPeerConnection;
+        this.browser = RTCBrowserType.RTC_BROWSER_RTCNINJA;
+        this.getUserMedia = rtcninja.getUserMedia.bind(navigator);
+        RTCSessionDescription = rtcninja.RTCSessionDescription;
+        RTCIceCandidate = rtcninja.RTCIceCandidate;
+        this.attachMediaStream = function(element, stream) {
+          if(!element[0])
+            return;
+          rtcninja.attachMediaStream(element[0], stream);
+        }
+        this.pc_constraints = {};
+        this.getStreamID = function (stream) {
+          // streams from FF endpoints have the characters '{' and '}'
+          // that make jQuery choke.
+          // Copied from Chrome above, Safari has Chrome style streams
+          if (stream.id) {
+            return stream.id.replace(/[\{,\}]/g, "");
+          }
+        };
+        this.getVideoSrc = function (element) {
+          if (!element)
+            return null;
+          return element.getAttribute("src");
+        };
+        this.setVideoSrc = function (element, src) {
+          if (element) {
+            element.setAttribute("src", src);
+          }
+        };
+      }
+    } else {
         try { console.log('Browser does not appear to be WebRTC-capable'); } catch (e) { }
-
         window.location.href = 'unsupported_browser.html';
         return;
     }
@@ -1425,8 +1462,7 @@ RTCUtils.prototype.handleLocalStream = function(stream, usageOptions)
     // If this is FF, the stream parameter is *not* a MediaStream object, it's
     // an object with two properties: audioStream, videoStream.
     var audioStream, videoStream;
-    if(window.webkitMediaStream)
-    {
+    if(this.browser === RTCBrowserType.RTC_BROWSER_CHROME) {
         audioStream = new webkitMediaStream();
         videoStream = new webkitMediaStream();
         if(stream) {
@@ -1442,11 +1478,17 @@ RTCUtils.prototype.handleLocalStream = function(stream, usageOptions)
                 videoStream.addTrack(videoTracks[i]);
             }
         }
-    }
-    else
-    {//firefox
+    } else if(this.browser === RTCBrowserType.RTC_BROWSER_RTCNINJA) {
+      if(stream) {
+        audioStream = stream;
+        videoStream = stream;
+      }
+    } else {
+      //firefox
+      if(stream) {
         audioStream = stream.audioStream;
         videoStream = stream.videoStream;
+      }
     }
 
     var audioMuted = (usageOptions && usageOptions.audio === false),
@@ -1622,7 +1664,7 @@ function registerListeners() {
         if(jid === APP.statistics.LOCAL_JID)
         {
             resourceJid = AudioLevels.LOCAL_LEVEL;
-            if(APP.RTC.localAudio.isMuted())
+            if(APP.RTC && APP.RTC.localAudio && APP.RTC.localAudio.isMuted())
             {
                 audioLevel = 0;
             }
@@ -2227,14 +2269,14 @@ UI.setInitialMuteFromFocus = function (muteAudio, muteVideo) {
  * Mutes/unmutes the local video.
  */
 UI.toggleVideo = function () {
-    setVideoMute(!APP.RTC.localVideo.isMuted());
+  setVideoMute(!(APP.RTC && APP.RTC.localVideo && APP.RTC.localVideo.isMuted()));
 };
 
 /**
  * Mutes / unmutes audio for the local participant.
  */
 UI.toggleAudio = function() {
-    UI.setAudioMuted(!APP.RTC.localAudio.isMuted());
+    UI.setAudioMuted(!(APP.RTC && APP.RTC.localAudio && APP.RTC.localAudio.isMuted()));
 };
 
 /**
@@ -9846,7 +9888,7 @@ var shortcuts = {
     84: {
         character: "T",
         function: function() {
-            if(!APP.RTC.localAudio.isMuted()) {
+            if(!(APP.RTC && APP.RTC.localAudio && APP.RTC.localAudio.isMuted())) {
                 APP.UI.toggleAudio();
             }
         }
@@ -9884,7 +9926,7 @@ var KeyboardShortcut = {
                 $(":focus").is("input[type=password]") ||
                 $(":focus").is("textarea"))) {
                 if(e.which === "T".charCodeAt(0)) {
-                    if(APP.RTC.localAudio.isMuted()) {
+                    if(APP.RTC && APP.RTC.localAudio && APP.RTC.localAudio.isMuted()) {
                         APP.UI.toggleAudio();
                     }
                 }
@@ -13794,10 +13836,11 @@ SDPUtil = {
 };
 module.exports = SDPUtil;
 },{}],50:[function(require,module,exports){
+var RTCUtils = require("../RTC/RTCUtils.js");
 function TraceablePeerConnection(ice_config, constraints) {
     var self = this;
-    var RTCPeerconnection = navigator.mozGetUserMedia ? mozRTCPeerConnection : webkitRTCPeerConnection;
-    this.peerconnection = new RTCPeerconnection(ice_config, constraints);
+    var rtcUtils = new RTCUtils(this);
+    this.peerconnection = new rtcUtils.peerconnection(ice_config, constraints);
     this.updateLog = [];
     this.stats = {};
     this.statsinterval = null;
@@ -14120,7 +14163,7 @@ TraceablePeerConnection.prototype.getStats = function(callback, errback) {
 module.exports = TraceablePeerConnection;
 
 
-},{"sdp-interop":84,"sdp-simulcast":87}],51:[function(require,module,exports){
+},{"../RTC/RTCUtils.js":8,"sdp-interop":84,"sdp-simulcast":87}],51:[function(require,module,exports){
 /* global $, $iq, APP, config, connection, UI, messageHandler,
  roomName, sessionTerminated, Strophe, Util */
 var XMPPEvents = require("../../service/xmpp/XMPPEvents");
@@ -14743,12 +14786,12 @@ module.exports = function(XMPP, eventEmitter) {
         initPresenceMap: function (myroomjid) {
             this.presMap['to'] = myroomjid;
             this.presMap['xns'] = 'http://jabber.org/protocol/muc';
-            if(APP.RTC.localAudio.isMuted())
+            if(APP.RTC && APP.RTC.localAudio && APP.RTC.localAudio.isMuted())
             {
                 this.addAudioInfoToPresence(true);
             }
 
-            if(APP.RTC.localVideo.isMuted())
+            if(APP.RTC && APP.RTC.localVideo && APP.RTC.localVideo.isMuted())
             {
                 this.addVideoInfoToPresence(true);
             }
@@ -28451,11 +28494,12 @@ module.exports = MediaStreamType;
 },{}],94:[function(require,module,exports){
 var RTCBrowserType = {
     RTC_BROWSER_CHROME: "rtc_browser.chrome",
-
-    RTC_BROWSER_FIREFOX: "rtc_browser.firefox"
+    RTC_BROWSER_FIREFOX: "rtc_browser.firefox",
+    RTC_BROWSER_RTCNINJA: "rtc_browser.rtcninja"
 };
 
 module.exports = RTCBrowserType;
+
 },{}],95:[function(require,module,exports){
 var RTCEvents = {
     LASTN_CHANGED: "rtc.lastn_changed",
