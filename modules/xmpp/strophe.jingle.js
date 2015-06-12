@@ -44,6 +44,7 @@ module.exports = function(XMPP, eventEmitter)
                 this.connection.disco.addFeature('urn:xmpp:jingle:1');
                 this.connection.disco.addFeature('urn:xmpp:jingle:apps:rtp:1');
                 this.connection.disco.addFeature('urn:xmpp:jingle:transports:ice-udp:1');
+                this.connection.disco.addFeature('urn:xmpp:jingle:apps:dtls:0');
                 this.connection.disco.addFeature('urn:xmpp:jingle:transports:dtls-sctp:1');
                 this.connection.disco.addFeature('urn:xmpp:jingle:apps:rtp:audio');
                 this.connection.disco.addFeature('urn:xmpp:jingle:apps:rtp:video');
@@ -327,8 +328,9 @@ module.exports = function(XMPP, eventEmitter)
          */
         populateData: function () {
             var data = {};
+            var self = this;
             Object.keys(this.sessions).forEach(function (sid) {
-                var session = this.sessions[sid];
+                var session = self.sessions[sid];
                 if (session.peerconnection && session.peerconnection.updateLog) {
                     // FIXME: should probably be a .dump call
                     data["jingle_" + session.sid] = {
