@@ -6,9 +6,10 @@ var SDP = require("./SDP");
 var RTCBrowserType = require("../../service/RTC/RTCBrowserType");
 var async = require("async");
 var transform = require("sdp-transform");
+var XMPPEvents = require("../../service/xmpp/XMPPEvents");
 
 // Jingle stuff
-function JingleSession(me, sid, connection, service) {
+function JingleSession(me, sid, connection, service, eventEmitter) {
     this.me = me;
     this.sid = sid;
     this.connection = connection;
@@ -27,6 +28,7 @@ function JingleSession(me, sid, connection, service) {
     this.ice_config = {};
     this.drip_container = [];
     this.service = service;
+    this.eventEmitter = eventEmitter;
 
     this.usetrickle = true;
     this.usepranswer = false; // early transport warmup -- mind you, this might fail. depends on webrtc issue 1718
@@ -1230,8 +1232,7 @@ JingleSession.onJingleFatalError = function (session, error)
 {
     this.service.sessionTerminated = true;
     this.connection.emuc.doLeave();
-    APP.UI.messageHandler.showError("dialog.sorry",
-        "dialog.internalError");
+    this.eventEmitter.emit(XMPPEvents.JINGLE_FATAL, session, error);
 }
 
 JingleSession.prototype.setLocalDescription = function () {
@@ -1299,19 +1300,19 @@ function sendKeyframe(pc) {
                         },
                         function (error) {
                             console.log('triggerKeyframe setLocalDescription failed', error);
-                            APP.UI.messageHandler.showError();
+                            eventEmitter.emit(XMPPEvents.SET_LOCAL_DESCRIPTION_ERROR);
                         }
                     );
                 },
                 function (error) {
                     console.log('triggerKeyframe createAnswer failed', error);
-                    APP.UI.messageHandler.showError();
+                    eventEmitter.emit(XMPPEvents.CREATE_ANSWER_ERROR);
                 }
             );
         },
         function (error) {
             console.log('triggerKeyframe setRemoteDescription failed', error);
-            APP.UI.messageHandler.showError();
+            eventEmitter.emit(XMPPEvents.SET_REMOTE_DESCRIPTION_ERROR);
         }
     );
 }
