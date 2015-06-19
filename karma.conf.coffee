@@ -17,9 +17,13 @@ module.exports = (config) ->
       './modules/**/Settings.js'
       './modules/**/UIUtil.js'
       './modules/**/RTC.js'
+      './modules/**/xmpp.js'
 
       # Module services
       './service/**/*.js'
+
+      # Mocks
+      './test/mocks.coffee'
 
       # Spec files
       './test/spec/**/*Spec.coffee'
@@ -30,6 +34,9 @@ module.exports = (config) ->
     preprocessors:
       # Modules and services under test
       './{modules,service}/**/*.js': [ 'commonjs' ]
+
+      # Mocks
+      './test/mocks.coffee': [ 'coffee' ]
 
       # Spec files
       './test/spec/**/*Spec.coffee': [ 'coffee', 'commonjs' ]
