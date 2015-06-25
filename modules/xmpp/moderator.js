@@ -333,10 +333,7 @@ var Moderator = {
                 // Do not show in case of session invalid
                 // which means just a retry
                 if (!invalidSession) {
-                    APP.UI.messageHandler.notify(
-                        null, "notify.focus",
-                        'disconnected', "notify.focusFail",
-                        {component: focusComponent, ms: retrySec});
+                    eventEmitter.emit(XMPPEvents.FOCUS_DISCONNECTED, focusComponent, retrySec);
                 }
                 // Reset response timeout
                 getNextTimeout(true);

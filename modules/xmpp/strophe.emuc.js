@@ -28,12 +28,12 @@ module.exports = function(XMPP, eventEmitter) {
         initPresenceMap: function (myroomjid) {
             this.presMap['to'] = myroomjid;
             this.presMap['xns'] = 'http://jabber.org/protocol/muc';
-            if(APP.RTC.localAudio.isMuted())
+            if(APP.RTC && APP.RTC.localAudio && APP.RTC.localAudio.isMuted())
             {
                 this.addAudioInfoToPresence(true);
             }
 
-            if(APP.RTC.localVideo.isMuted())
+            if(APP.RTC && APP.RTC.localVideo && APP.RTC.localVideo.isMuted())
             {
                 this.addVideoInfoToPresence(true);
             }
@@ -112,7 +112,7 @@ module.exports = function(XMPP, eventEmitter) {
             // Parse etherpad tag.
             var etherpad = $(pres).find('>etherpad');
             if (etherpad.length) {
-                if (config.etherpad_base && !Moderator.isModerator()) {
+                if (config.etherpad_base) {
                     eventEmitter.emit(XMPPEvents.ETHERPAD, etherpad.text());
                 }
             }
@@ -155,7 +155,7 @@ module.exports = function(XMPP, eventEmitter) {
             var startMuted = $(pres).find('>startmuted');
             if (startMuted.length)
             {
-                eventEmitter.emit(XMPPEvents.START_MUTED,
+                eventEmitter.emit(XMPPEvents.START_MUTED_SETTING_CHANGED,
                     startMuted.attr("audio") === "true", startMuted.attr("video") === "true");
             }
 
@@ -329,19 +329,15 @@ module.exports = function(XMPP, eventEmitter) {
                     // We're either missing Jicofo/Prosody config for anonymous
                     // domains or something is wrong.
 //                    XMPP.promptLogin();
-                    APP.UI.messageHandler.openReportDialog(null,
-                        "dialog.joinError", pres);
+                    eventEmitter.emit(XMPPEvents.ROOM_JOIN_ERROR, pres);
+
                 } else {
                     console.warn('onPresError ', pres);
-                    APP.UI.messageHandler.openReportDialog(null,
-                        "dialog.connectError",
-                        pres);
+                    eventEmitter.emit(XMPPEvents.ROOM_CONNECT_ERROR, pres);
                 }
             } else {
                 console.warn('onPresError ', pres);
-                APP.UI.messageHandler.openReportDialog(null,
-                    "dialog.connectError",
-                    pres);
+                eventEmitter.emit(XMPPEvents.ROOM_CONNECT_ERROR, pres);
             }
             return true;
         },
@@ -500,11 +496,6 @@ module.exports = function(XMPP, eventEmitter) {
                     .c('current').t(this.presMap['prezicurrent']).up().up();
             }
 
-            if (this.presMap['etherpadns']) {
-                pres.c('etherpad', {xmlns: this.presMap['etherpadns']})
-                    .t(this.presMap['etherpadname']).up();
-            }
-
             if (this.presMap['medians']) {
                 pres.c('media', {xmlns: this.presMap['medians']});
                 var sourceNumber = 0;
@@ -573,10 +564,6 @@ module.exports = function(XMPP, eventEmitter) {
         },
         getPrezi: function (roomjid) {
             return this.preziMap[roomjid];
-        },
-        addEtherpadToPresence: function (etherpadName) {
-            this.presMap['etherpadns'] = 'http://jitsi.org/jitmeet/etherpad';
-            this.presMap['etherpadname'] = etherpadName;
         },
         addAudioInfoToPresence: function (isMuted) {
             this.presMap['audions'] = 'http://jitsi.org/jitmeet/audio';

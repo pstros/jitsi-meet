@@ -26,6 +26,7 @@ var DesktopSharingEventTypes
 var RTCEvents = require("../../service/RTC/RTCEvents");
 var StreamEventTypes = require("../../service/RTC/StreamEventTypes");
 var XMPPEvents = require("../../service/xmpp/XMPPEvents");
+var UIEvents = require("../../service/UI/UIEvents");
 var MemberEvents = require("../../service/members/Events");
 
 var eventEmitter = new EventEmitter();
@@ -132,7 +133,7 @@ function registerListeners() {
         if(jid === APP.statistics.LOCAL_JID)
         {
             resourceJid = AudioLevels.LOCAL_LEVEL;
-            if(APP.RTC.localAudio.isMuted())
+            if(APP.RTC && APP.RTC.localAudio && APP.RTC.localAudio.isMuted())
             {
                 audioLevel = 0;
             }
@@ -244,8 +245,65 @@ function registerListeners() {
 
     APP.members.addListener(MemberEvents.DTMF_SUPPORT_CHANGED,
                             onDtmfSupportChanged);
-    APP.xmpp.addListener(XMPPEvents.START_MUTED, function (audio, video) {
+    APP.xmpp.addListener(XMPPEvents.START_MUTED_SETTING_CHANGED, function (audio, video) {
         SettingsMenu.setStartMuted(audio, video);
+    });
+    APP.xmpp.addListener(XMPPEvents.START_MUTED_FROM_FOCUS, function (audio, video) {
+        UI.setInitialMuteFromFocus(audio, video);
+    });
+
+    APP.xmpp.addListener(XMPPEvents.JINGLE_FATAL, function (session, error) {
+        UI.messageHandler.showError("dialog.sorry",
+            "dialog.internalError");
+    });
+
+    APP.xmpp.addListener(XMPPEvents.SET_LOCAL_DESCRIPTION_ERROR, function() {
+        messageHandler.showError("dialog.error",
+                                        "dialog.SLDFailure");
+    });
+    APP.xmpp.addListener(XMPPEvents.SET_REMOTE_DESCRIPTION_ERROR, function() {
+        messageHandler.showError("dialog.error",
+            "dialog.SRDFailure");
+    });
+    APP.xmpp.addListener(XMPPEvents.CREATE_ANSWER_ERROR, function() {
+        messageHandler.showError();
+    });
+    APP.xmpp.addListener(XMPPEvents.CREATE_ANSWER_ERROR, function() {
+        messageHandler.showError();
+    });
+    APP.xmpp.addListener(XMPPEvents.PROMPT_FOR_LOGIN, function() {
+        // FIXME: re-use LoginDialog which supports retries
+        UI.showLoginPopup(connect);
+    });
+    
+    APP.xmpp.addListener(XMPPEvents.FOCUS_DISCONNECTED, function(focusComponent, retrySec) {
+        UI.messageHandler.notify(
+            null, "notify.focus",
+            'disconnected', "notify.focusFail",
+            {component: focusComponent, ms: retrySec});
+    });
+    
+    APP.xmpp.addListener(XMPPEvents.ROOM_JOIN_ERROR, function(pres) {
+        UI.messageHandler.openReportDialog(null,
+            "dialog.joinError", pres);
+    });
+    APP.xmpp.addListener(XMPPEvents.ROOM_CONNECT_ERROR, function(pres) {
+        UI.messageHandler.openReportDialog(null,
+            "dialog.connectError", pres);
+    });
+    
+    APP.xmpp.addListener(XMPPEvents.MUTE_AUDIO_CHANGED, function(doMuteAudio) {
+        UI.setAudioMuted(doMuteAudio);
+    });
+
+    APP.xmpp.addListener(XMPPEvents.READY_TO_JOIN, function() {
+        var roomName = UI.generateRoomName();
+        APP.xmpp.allocateConferenceFocus(roomName, UI.checkForNicknameAndJoin);
+    });
+    
+    //NicknameHandler emits this event
+    UI.addListener(UIEvents.NICKNAME_CHANGED, function (nickname) {
+        APP.xmpp.addToPresence("displayName", nickname);
     });
 }
 
@@ -441,7 +499,7 @@ function onMucJoined(jid, info) {
 
 function initEtherpad(name) {
     Etherpad.init(name);
-};
+}
 
 function onMucMemberLeft(jid) {
     console.log('left.muc', jid);
@@ -497,11 +555,7 @@ function onModeratorStatusChanged(isModerator) {
     // Recording visible if
     // there are at least 2(+ 1 focus) participants
     //Object.keys(connection.emuc.members).length >= 3);
-
-    if (isModerator && config.etherpad_base) {
-        Etherpad.init();
-    }
-};
+}
 
 function onPasswordRequired(callback) {
     // password is required
@@ -737,14 +791,14 @@ UI.setInitialMuteFromFocus = function (muteAudio, muteVideo) {
  * Mutes/unmutes the local video.
  */
 UI.toggleVideo = function () {
-    setVideoMute(!APP.RTC.localVideo.isMuted());
+  setVideoMute(!(APP.RTC && APP.RTC.localVideo && APP.RTC.localVideo.isMuted()));
 };
 
 /**
  * Mutes / unmutes audio for the local participant.
  */
 UI.toggleAudio = function() {
-    UI.setAudioMuted(!APP.RTC.localAudio.isMuted());
+    UI.setAudioMuted(!(APP.RTC && APP.RTC.localAudio && APP.RTC.localAudio.isMuted()));
 };
 
 /**
