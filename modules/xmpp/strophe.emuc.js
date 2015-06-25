@@ -112,7 +112,7 @@ module.exports = function(XMPP, eventEmitter) {
             // Parse etherpad tag.
             var etherpad = $(pres).find('>etherpad');
             if (etherpad.length) {
-                if (config.etherpad_base && !Moderator.isModerator()) {
+                if (config.etherpad_base) {
                     eventEmitter.emit(XMPPEvents.ETHERPAD, etherpad.text());
                 }
             }
@@ -385,11 +385,24 @@ module.exports = function(XMPP, eventEmitter) {
                 }
             }
 
+            // xep-0203 delay
+            var stamp = $(msg).find('>delay').attr('stamp');
+
+            if (!stamp) {
+                // or xep-0091 delay, UTC timestamp
+                stamp = $(msg).find('>[xmlns="jabber:x:delay"]').attr('stamp');
+
+                if (stamp) {
+                    // the format is CCYYMMDDThh:mm:ss
+                    var dateParts = stamp.match(/(\d{4})(\d{2})(\d{2}T\d{2}:\d{2}:\d{2})/);
+                    stamp = dateParts[1] + "-" + dateParts[2] + "-" + dateParts[3] + "Z";
+                }
+            }
 
             if (txt) {
                 console.log('chat', nick, txt);
                 eventEmitter.emit(XMPPEvents.MESSAGE_RECEIVED,
-                    from, nick, txt, this.myroomjid);
+                    from, nick, txt, this.myroomjid, stamp);
             }
             return true;
         },
@@ -500,11 +513,6 @@ module.exports = function(XMPP, eventEmitter) {
                     .c('current').t(this.presMap['prezicurrent']).up().up();
             }
 
-            if (this.presMap['etherpadns']) {
-                pres.c('etherpad', {xmlns: this.presMap['etherpadns']})
-                    .t(this.presMap['etherpadname']).up();
-            }
-
             if (this.presMap['medians']) {
                 pres.c('media', {xmlns: this.presMap['medians']});
                 var sourceNumber = 0;
@@ -573,10 +581,6 @@ module.exports = function(XMPP, eventEmitter) {
         },
         getPrezi: function (roomjid) {
             return this.preziMap[roomjid];
-        },
-        addEtherpadToPresence: function (etherpadName) {
-            this.presMap['etherpadns'] = 'http://jitsi.org/jitmeet/etherpad';
-            this.presMap['etherpadname'] = etherpadName;
         },
         addAudioInfoToPresence: function (isMuted) {
             this.presMap['audions'] = 'http://jitsi.org/jitmeet/audio';
