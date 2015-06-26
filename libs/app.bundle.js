@@ -1,4 +1,4 @@
-!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.APP=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.APP = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /* jshint -W117 */
 /* application specific logic */
 
@@ -290,7 +290,7 @@ var API = {
 };
 
 module.exports = API;
-},{"../../service/xmpp/XMPPEvents":106}],3:[function(require,module,exports){
+},{"../../service/xmpp/XMPPEvents":116}],3:[function(require,module,exports){
 /* global APP */
 
 /**
@@ -557,7 +557,7 @@ function onPinnedEndpointChanged(userResource)
 module.exports = DataChannels;
 
 
-},{"../../service/RTC/RTCEvents":97}],5:[function(require,module,exports){
+},{"../../service/RTC/RTCEvents":107}],5:[function(require,module,exports){
 var StreamEventTypes = require("../../service/RTC/StreamEventTypes.js");
 
 
@@ -665,7 +665,7 @@ LocalStream.prototype.getId = function () {
 
 module.exports = LocalStream;
 
-},{"../../service/RTC/StreamEventTypes.js":99}],6:[function(require,module,exports){
+},{"../../service/RTC/StreamEventTypes.js":109}],6:[function(require,module,exports){
 ////These lines should be uncommented when require works in app.js
 var MediaStreamType = require("../../service/RTC/MediaStreamTypes");
 var StreamEventType = require("../../service/RTC/StreamEventTypes");
@@ -727,7 +727,7 @@ MediaStream.prototype.setVideoType = function (value) {
 
 module.exports = MediaStream;
 
-},{"../../service/RTC/MediaStreamTypes":95,"../../service/RTC/StreamEventTypes":99}],7:[function(require,module,exports){
+},{"../../service/RTC/MediaStreamTypes":105,"../../service/RTC/StreamEventTypes":109}],7:[function(require,module,exports){
 var EventEmitter = require("events");
 var RTCUtils = require("./RTCUtils.js");
 var LocalStream = require("./LocalStream.js");
@@ -771,6 +771,17 @@ function getMediaStreamUsage()
     return result;
 }
 
+function containsValue(singleton, value)
+{
+    var containsValue = false;
+    for(var prop in singleton)
+    {
+        if(singleton[prop] === value)
+            containsValue = true;
+    }
+    return containsValue;
+}
+
 var RTC = {
     rtcUtils: null,
     devices: {
@@ -788,14 +799,14 @@ var RTC = {
         eventEmitter.on(type, listener);
     },
     removeStreamListener: function (listener, eventType) {
-        if(!(eventType instanceof StreamEventTypes))
+        if(!containsValue(StreamEventTypes, eventType))
             throw "Illegal argument";
 
         eventEmitter.removeListener(eventType, listener);
     },
     createLocalStream: function (stream, type, change, videoType, isMuted, isGUMStream) {
 
-        var localStream =  new LocalStream(stream, type, eventEmitter, videoType, isGUMStream);
+        var localStream = new LocalStream(stream, type, eventEmitter, videoType, isGUMStream);
         //in firefox we have only one stream object
         if(this.localStreams.length == 0 ||
             this.localStreams[0].getOriginalStream() != stream)
@@ -822,7 +833,7 @@ var RTC = {
         for(var i = 0; i < this.localStreams.length; i++)
         {
             if(this.localStreams[i].getOriginalStream() === stream) {
-                delete this.localStreams[i];
+                this.localStreams.splice(i, 1);
                 return;
             }
         }
@@ -1013,7 +1024,7 @@ var RTC = {
 
 module.exports = RTC;
 
-},{"../../service/RTC/MediaStreamTypes":95,"../../service/RTC/RTCEvents.js":97,"../../service/RTC/StreamEventTypes.js":99,"../../service/UI/UIEvents":100,"../../service/desktopsharing/DesktopSharingEventTypes":103,"../../service/xmpp/XMPPEvents":106,"./DataChannels":4,"./LocalStream.js":5,"./MediaStream.js":6,"./RTCUtils.js":8,"events":107}],8:[function(require,module,exports){
+},{"../../service/RTC/MediaStreamTypes":105,"../../service/RTC/RTCEvents.js":107,"../../service/RTC/StreamEventTypes.js":109,"../../service/UI/UIEvents":110,"../../service/desktopsharing/DesktopSharingEventTypes":113,"../../service/xmpp/XMPPEvents":116,"./DataChannels":4,"./LocalStream.js":5,"./MediaStream.js":6,"./RTCUtils.js":8,"events":65}],8:[function(require,module,exports){
 var RTCBrowserType = require("../../service/RTC/RTCBrowserType.js");
 var Resolutions = require("../../service/RTC/Resolutions");
 
@@ -1487,7 +1498,7 @@ RTCUtils.prototype.createStream = function(stream, isVideo)
 
 module.exports = RTCUtils;
 
-},{"../../service/RTC/RTCBrowserType.js":96,"../../service/RTC/Resolutions":98}],9:[function(require,module,exports){
+},{"../../service/RTC/RTCBrowserType.js":106,"../../service/RTC/Resolutions":108}],9:[function(require,module,exports){
 var UI = {};
 
 var VideoLayout = require("./videolayout/VideoLayout.js");
@@ -2294,7 +2305,7 @@ UI.setVideoMute = setVideoMute;
 module.exports = UI;
 
 
-},{"../../service/RTC/RTCEvents":97,"../../service/RTC/StreamEventTypes":99,"../../service/connectionquality/CQEvents":102,"../../service/desktopsharing/DesktopSharingEventTypes":103,"../../service/members/Events":104,"../../service/xmpp/XMPPEvents":106,"./../settings/Settings":45,"./audio_levels/AudioLevels.js":10,"./authentication/Authentication":12,"./avatar/Avatar":14,"./etherpad/Etherpad.js":15,"./prezi/Prezi.js":16,"./side_pannels/SidePanelToggler":18,"./side_pannels/chat/Chat.js":19,"./side_pannels/contactlist/ContactList":23,"./side_pannels/settings/SettingsMenu":24,"./toolbars/BottomToolbar":25,"./toolbars/Toolbar":26,"./toolbars/ToolbarToggler":27,"./util/MessageHandler":29,"./util/NicknameHandler":30,"./util/UIUtil":31,"./videolayout/VideoLayout.js":37,"./welcome_page/RoomnameGenerator":38,"./welcome_page/WelcomePage":39,"events":107}],10:[function(require,module,exports){
+},{"../../service/RTC/RTCEvents":107,"../../service/RTC/StreamEventTypes":109,"../../service/connectionquality/CQEvents":112,"../../service/desktopsharing/DesktopSharingEventTypes":113,"../../service/members/Events":114,"../../service/xmpp/XMPPEvents":116,"./../settings/Settings":45,"./audio_levels/AudioLevels.js":10,"./authentication/Authentication":12,"./avatar/Avatar":14,"./etherpad/Etherpad.js":15,"./prezi/Prezi.js":16,"./side_pannels/SidePanelToggler":18,"./side_pannels/chat/Chat.js":19,"./side_pannels/contactlist/ContactList":23,"./side_pannels/settings/SettingsMenu":24,"./toolbars/BottomToolbar":25,"./toolbars/Toolbar":26,"./toolbars/ToolbarToggler":27,"./util/MessageHandler":29,"./util/NicknameHandler":30,"./util/UIUtil":31,"./videolayout/VideoLayout.js":37,"./welcome_page/RoomnameGenerator":38,"./welcome_page/WelcomePage":39,"events":65}],10:[function(require,module,exports){
 var CanvasUtil = require("./CanvasUtils");
 
 var ASDrawContext = $('#activeSpeakerAudioLevel')[0].getContext('2d');
@@ -3184,7 +3195,7 @@ var Avatar = {
 
 
 module.exports = Avatar;
-},{"../../../service/RTC/MediaStreamTypes":95,"../../settings/Settings":45,"../videolayout/LargeVideo":33,"../videolayout/VideoLayout":37}],15:[function(require,module,exports){
+},{"../../../service/RTC/MediaStreamTypes":105,"../../settings/Settings":45,"../videolayout/LargeVideo":33,"../videolayout/VideoLayout":37}],15:[function(require,module,exports){
 /* global $, config,
    setLargeVideoVisible, Util */
 
@@ -4570,7 +4581,7 @@ var Chat = (function (my) {
     return my;
 }(Chat || {}));
 module.exports = Chat;
-},{"../../../../service/UI/UIEvents":100,"../../toolbars/ToolbarToggler":27,"../../util/NicknameHandler":30,"../../util/UIUtil":31,"../SidePanelToggler":18,"./Commands":20,"./Replacement":21,"./smileys.json":22}],20:[function(require,module,exports){
+},{"../../../../service/UI/UIEvents":110,"../../toolbars/ToolbarToggler":27,"../../util/NicknameHandler":30,"../../util/UIUtil":31,"../SidePanelToggler":18,"./Commands":20,"./Replacement":21,"./smileys.json":22}],20:[function(require,module,exports){
 var UIUtil = require("../../util/UIUtil");
 
 /**
@@ -5078,7 +5089,7 @@ var SettingsMenu = {
 
 
 module.exports = SettingsMenu;
-},{"../../../../service/translation/languages":105,"../../avatar/Avatar":14,"../../util/UIUtil":31,"./../../../settings/Settings":45}],25:[function(require,module,exports){
+},{"../../../../service/translation/languages":115,"../../avatar/Avatar":14,"../../util/UIUtil":31,"./../../../settings/Settings":45}],25:[function(require,module,exports){
 var PanelToggler = require("../side_pannels/SidePanelToggler");
 
 var buttonHandlers = {
@@ -5772,7 +5783,7 @@ var Toolbar = (function (my) {
 }(Toolbar || {}));
 
 module.exports = Toolbar;
-},{"../../../service/authentication/AuthenticationEvents":101,"../authentication/Authentication":12,"../etherpad/Etherpad":15,"../prezi/Prezi":16,"../side_pannels/SidePanelToggler":18,"../util/MessageHandler":29,"../util/UIUtil":31,"./BottomToolbar":25}],27:[function(require,module,exports){
+},{"../../../service/authentication/AuthenticationEvents":111,"../authentication/Authentication":12,"../etherpad/Etherpad":15,"../prezi/Prezi":16,"../side_pannels/SidePanelToggler":18,"../util/MessageHandler":29,"../util/UIUtil":31,"./BottomToolbar":25}],27:[function(require,module,exports){
 /* global $, interfaceConfig, Moderator, DesktopStreaming.showDesktopSharingButton */
 
 var toolbarTimeoutObject,
@@ -6253,7 +6264,7 @@ var NickanameHandler = {
 };
 
 module.exports = NickanameHandler;
-},{"../../../service/UI/UIEvents":100}],31:[function(require,module,exports){
+},{"../../../service/UI/UIEvents":110}],31:[function(require,module,exports){
 /**
  * Created by hristo on 12/22/14.
  */
@@ -7177,7 +7188,7 @@ var LargeVideo = {
 
 
 module.exports = LargeVideo;
-},{"../../../service/UI/UIEvents":100,"../../xmpp/xmpp":63,"../avatar/Avatar":14,"../etherpad/Etherpad":15,"../prezi/Prezi":16,"../util/UIUtil":31}],34:[function(require,module,exports){
+},{"../../../service/UI/UIEvents":110,"../../xmpp/xmpp":63,"../avatar/Avatar":14,"../etherpad/Etherpad":15,"../prezi/Prezi":16,"../util/UIUtil":31}],34:[function(require,module,exports){
 var SmallVideo = require("./SmallVideo");
 var ConnectionIndicator = require("./ConnectionIndicator");
 var NicknameHandler = require("../util/NicknameHandler");
@@ -8977,7 +8988,7 @@ var VideoLayout = (function (my) {
 }(VideoLayout || {}));
 
 module.exports = VideoLayout;
-},{"../../../service/RTC/MediaStreamTypes":95,"../../../service/UI/UIEvents":100,"../audio_levels/AudioLevels":10,"../avatar/Avatar":14,"../prezi/Prezi":16,"../side_pannels/contactlist/ContactList":23,"./LargeVideo":33,"./LocalVideo":34,"./RemoteVideo":35}],38:[function(require,module,exports){
+},{"../../../service/RTC/MediaStreamTypes":105,"../../../service/UI/UIEvents":110,"../audio_levels/AudioLevels":10,"../avatar/Avatar":14,"../prezi/Prezi":16,"../side_pannels/contactlist/ContactList":23,"./LargeVideo":33,"./LocalVideo":34,"./RemoteVideo":35}],38:[function(require,module,exports){
 //var nouns = [
 //];
 var pluralNouns = [
@@ -9436,7 +9447,7 @@ var ConnectionQuality = {
 };
 
 module.exports = ConnectionQuality;
-},{"../../service/connectionquality/CQEvents":102,"../../service/xmpp/XMPPEvents":106,"events":107}],42:[function(require,module,exports){
+},{"../../service/connectionquality/CQEvents":112,"../../service/xmpp/XMPPEvents":116,"events":65}],42:[function(require,module,exports){
 /* global $, alert, APP, changeLocalVideo, chrome, config, getConferenceHandler,
  getUserMediaWithConstraints */
 /**
@@ -9806,7 +9817,7 @@ module.exports = {
 };
 
 
-},{"../../service/desktopsharing/DesktopSharingEventTypes":103,"events":107}],43:[function(require,module,exports){
+},{"../../service/desktopsharing/DesktopSharingEventTypes":113,"events":65}],43:[function(require,module,exports){
 //maps keycode to character, id of popover for given function and function
 var shortcuts = {
     67: {
@@ -10030,7 +10041,7 @@ var Members = {
 
 module.exports = Members;
 
-},{"../../service/members/Events":104,"../../service/xmpp/XMPPEvents":106,"events":107}],45:[function(require,module,exports){
+},{"../../service/members/Events":114,"../../service/xmpp/XMPPEvents":116,"events":65}],45:[function(require,module,exports){
 var email = '';
 var displayName = '';
 var userId;
@@ -10970,7 +10981,7 @@ StatsCollector.prototype.processAudioLevelReport = function ()
 
 };
 
-},{"../../service/RTC/RTCBrowserType":96}],48:[function(require,module,exports){
+},{"../../service/RTC/RTCBrowserType":106}],48:[function(require,module,exports){
 /**
  * Created by hristo on 8/4/14.
  */
@@ -11103,7 +11114,7 @@ var statistics =
 
 
 module.exports = statistics;
-},{"../../service/RTC/StreamEventTypes.js":99,"../../service/xmpp/XMPPEvents":106,"./LocalStatsCollector.js":46,"./RTPStatsCollector.js":47,"events":107}],49:[function(require,module,exports){
+},{"../../service/RTC/StreamEventTypes.js":109,"../../service/xmpp/XMPPEvents":116,"./LocalStatsCollector.js":46,"./RTPStatsCollector.js":47,"events":65}],49:[function(require,module,exports){
 var i18n = require("i18next-client");
 var languages = require("../../service/translation/languages");
 var Settings = require("../settings/Settings");
@@ -11242,7 +11253,7 @@ module.exports = {
     }
 };
 
-},{"../../service/translation/languages":105,"../settings/Settings":45,"i18next-client":65}],50:[function(require,module,exports){
+},{"../../service/translation/languages":115,"../settings/Settings":45,"i18next-client":67}],50:[function(require,module,exports){
 /* jshint -W117 */
 var TraceablePeerConnection = require("./TraceablePeerConnection");
 var SDPDiffer = require("./SDPDiffer");
@@ -12636,7 +12647,7 @@ JingleSession.prototype.remoteStreamAdded = function (data, times) {
 
 module.exports = JingleSession;
 
-},{"../../service/RTC/RTCBrowserType":96,"./SDP":51,"./SDPDiffer":52,"./SDPUtil":53,"./TraceablePeerConnection":54,"async":64,"sdp-transform":92}],51:[function(require,module,exports){
+},{"../../service/RTC/RTCBrowserType":106,"./SDP":51,"./SDPDiffer":52,"./SDPUtil":53,"./TraceablePeerConnection":54,"async":64,"sdp-transform":102}],51:[function(require,module,exports){
 /* jshint -W117 */
 var SDPUtil = require("./SDPUtil");
 
@@ -14101,7 +14112,7 @@ TraceablePeerConnection.prototype.getStats = function(callback, errback) {
 module.exports = TraceablePeerConnection;
 
 
-},{"sdp-interop":86,"sdp-simulcast":89}],55:[function(require,module,exports){
+},{"sdp-interop":88,"sdp-simulcast":95}],55:[function(require,module,exports){
 /* global $, $iq, APP, config, connection, UI, messageHandler,
  roomName, sessionTerminated, Strophe, Util */
 var XMPPEvents = require("../../service/xmpp/XMPPEvents");
@@ -14537,7 +14548,7 @@ module.exports = Moderator;
 
 
 
-},{"../../service/authentication/AuthenticationEvents":101,"../../service/xmpp/XMPPEvents":106,"../settings/Settings":45}],56:[function(require,module,exports){
+},{"../../service/authentication/AuthenticationEvents":111,"../../service/xmpp/XMPPEvents":116,"../settings/Settings":45}],56:[function(require,module,exports){
 /* global $, $iq, config, connection, focusMucJid, messageHandler, Moderator,
    Toolbar, Util */
 var Moderator = require("./moderator");
@@ -15390,7 +15401,7 @@ module.exports = function(XMPP, eventEmitter) {
 };
 
 
-},{"../../service/xmpp/XMPPEvents":106,"./JingleSession":50,"./moderator":55}],58:[function(require,module,exports){
+},{"../../service/xmpp/XMPPEvents":116,"./JingleSession":50,"./moderator":55}],58:[function(require,module,exports){
 /* jshint -W117 */
 
 var JingleSession = require("./JingleSession");
@@ -15739,7 +15750,7 @@ module.exports = function(XMPP, eventEmitter)
 };
 
 
-},{"../../service/xmpp/XMPPEvents":106,"./JingleSession":50}],59:[function(require,module,exports){
+},{"../../service/xmpp/XMPPEvents":116,"./JingleSession":50}],59:[function(require,module,exports){
 /* global Strophe */
 module.exports = function () {
 
@@ -16573,7 +16584,7 @@ var XMPP = {
 
 module.exports = XMPP;
 
-},{"../../service/RTC/RTCEvents":97,"../../service/RTC/StreamEventTypes":99,"../../service/UI/UIEvents":100,"../../service/xmpp/XMPPEvents":106,"../settings/Settings":45,"./SDP":51,"./moderator":55,"./recording":56,"./strophe.emuc":57,"./strophe.jingle":58,"./strophe.logger":59,"./strophe.moderate":60,"./strophe.rayo":61,"./strophe.util":62,"events":107,"pako":66,"retry":82}],64:[function(require,module,exports){
+},{"../../service/RTC/RTCEvents":107,"../../service/RTC/StreamEventTypes":109,"../../service/UI/UIEvents":110,"../../service/xmpp/XMPPEvents":116,"../settings/Settings":45,"./SDP":51,"./moderator":55,"./recording":56,"./strophe.emuc":57,"./strophe.jingle":58,"./strophe.logger":59,"./strophe.moderate":60,"./strophe.rayo":61,"./strophe.util":62,"events":65,"pako":68,"retry":84}],64:[function(require,module,exports){
 (function (process){
 /*!
  * async
@@ -17700,7 +17711,402 @@ module.exports = XMPP;
 }());
 
 }).call(this,require('_process'))
-},{"_process":108}],65:[function(require,module,exports){
+},{"_process":66}],65:[function(require,module,exports){
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+function EventEmitter() {
+  this._events = this._events || {};
+  this._maxListeners = this._maxListeners || undefined;
+}
+module.exports = EventEmitter;
+
+// Backwards-compat with node 0.10.x
+EventEmitter.EventEmitter = EventEmitter;
+
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined;
+
+// By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+EventEmitter.defaultMaxListeners = 10;
+
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+EventEmitter.prototype.setMaxListeners = function(n) {
+  if (!isNumber(n) || n < 0 || isNaN(n))
+    throw TypeError('n must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+EventEmitter.prototype.emit = function(type) {
+  var er, handler, len, args, i, listeners;
+
+  if (!this._events)
+    this._events = {};
+
+  // If there is no 'error' event listener then throw.
+  if (type === 'error') {
+    if (!this._events.error ||
+        (isObject(this._events.error) && !this._events.error.length)) {
+      er = arguments[1];
+      if (er instanceof Error) {
+        throw er; // Unhandled 'error' event
+      }
+      throw TypeError('Uncaught, unspecified "error" event.');
+    }
+  }
+
+  handler = this._events[type];
+
+  if (isUndefined(handler))
+    return false;
+
+  if (isFunction(handler)) {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        len = arguments.length;
+        args = new Array(len - 1);
+        for (i = 1; i < len; i++)
+          args[i - 1] = arguments[i];
+        handler.apply(this, args);
+    }
+  } else if (isObject(handler)) {
+    len = arguments.length;
+    args = new Array(len - 1);
+    for (i = 1; i < len; i++)
+      args[i - 1] = arguments[i];
+
+    listeners = handler.slice();
+    len = listeners.length;
+    for (i = 0; i < len; i++)
+      listeners[i].apply(this, args);
+  }
+
+  return true;
+};
+
+EventEmitter.prototype.addListener = function(type, listener) {
+  var m;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events)
+    this._events = {};
+
+  // To avoid recursion in the case that type === "newListener"! Before
+  // adding it to the listeners, first emit "newListener".
+  if (this._events.newListener)
+    this.emit('newListener', type,
+              isFunction(listener.listener) ?
+              listener.listener : listener);
+
+  if (!this._events[type])
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  else if (isObject(this._events[type]))
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+  else
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+
+  // Check for listener leak
+  if (isObject(this._events[type]) && !this._events[type].warned) {
+    var m;
+    if (!isUndefined(this._maxListeners)) {
+      m = this._maxListeners;
+    } else {
+      m = EventEmitter.defaultMaxListeners;
+    }
+
+    if (m && m > 0 && this._events[type].length > m) {
+      this._events[type].warned = true;
+      console.error('(node) warning: possible EventEmitter memory ' +
+                    'leak detected. %d listeners added. ' +
+                    'Use emitter.setMaxListeners() to increase limit.',
+                    this._events[type].length);
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
+    }
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener) {
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  var fired = false;
+
+  function g() {
+    this.removeListener(type, g);
+
+    if (!fired) {
+      fired = true;
+      listener.apply(this, arguments);
+    }
+  }
+
+  g.listener = listener;
+  this.on(type, g);
+
+  return this;
+};
+
+// emits a 'removeListener' event iff the listener was removed
+EventEmitter.prototype.removeListener = function(type, listener) {
+  var list, position, length, i;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events || !this._events[type])
+    return this;
+
+  list = this._events[type];
+  length = list.length;
+  position = -1;
+
+  if (list === listener ||
+      (isFunction(list.listener) && list.listener === listener)) {
+    delete this._events[type];
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+
+  } else if (isObject(list)) {
+    for (i = length; i-- > 0;) {
+      if (list[i] === listener ||
+          (list[i].listener && list[i].listener === listener)) {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0)
+      return this;
+
+    if (list.length === 1) {
+      list.length = 0;
+      delete this._events[type];
+    } else {
+      list.splice(position, 1);
+    }
+
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  var key, listeners;
+
+  if (!this._events)
+    return this;
+
+  // not listening for removeListener, no need to emit
+  if (!this._events.removeListener) {
+    if (arguments.length === 0)
+      this._events = {};
+    else if (this._events[type])
+      delete this._events[type];
+    return this;
+  }
+
+  // emit removeListener for all listeners on all events
+  if (arguments.length === 0) {
+    for (key in this._events) {
+      if (key === 'removeListener') continue;
+      this.removeAllListeners(key);
+    }
+    this.removeAllListeners('removeListener');
+    this._events = {};
+    return this;
+  }
+
+  listeners = this._events[type];
+
+  if (isFunction(listeners)) {
+    this.removeListener(type, listeners);
+  } else {
+    // LIFO order
+    while (listeners.length)
+      this.removeListener(type, listeners[listeners.length - 1]);
+  }
+  delete this._events[type];
+
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  var ret;
+  if (!this._events || !this._events[type])
+    ret = [];
+  else if (isFunction(this._events[type]))
+    ret = [this._events[type]];
+  else
+    ret = this._events[type].slice();
+  return ret;
+};
+
+EventEmitter.listenerCount = function(emitter, type) {
+  var ret;
+  if (!emitter._events || !emitter._events[type])
+    ret = 0;
+  else if (isFunction(emitter._events[type]))
+    ret = 1;
+  else
+    ret = emitter._events[type].length;
+  return ret;
+};
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+
+},{}],66:[function(require,module,exports){
+// shim for using process in browser
+
+var process = module.exports = {};
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = setTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            currentQueue[queueIndex].run();
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    clearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        setTimeout(drainQueue, 0);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+// TODO(shtylman)
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],67:[function(require,module,exports){
 // i18next, v1.7.7
 // Copyright (c)2014 Jan Mühlemann (jamuhl).
 // Distributed under MIT license
@@ -19823,7 +20229,7 @@ module.exports = XMPP;
     i18n.options = o;
 
 })();
-},{"jquery":"jquery"}],66:[function(require,module,exports){
+},{"jquery":"jquery"}],68:[function(require,module,exports){
 // Top level file is just a mixin of submodules & constants
 'use strict';
 
@@ -19839,7 +20245,7 @@ assign(pako, deflate, inflate, constants);
 
 module.exports = pako;
 
-},{"./lib/deflate":67,"./lib/inflate":68,"./lib/utils/common":69,"./lib/zlib/constants":72}],67:[function(require,module,exports){
+},{"./lib/deflate":69,"./lib/inflate":70,"./lib/utils/common":71,"./lib/zlib/constants":74}],69:[function(require,module,exports){
 'use strict';
 
 
@@ -20217,7 +20623,7 @@ exports.deflate = deflate;
 exports.deflateRaw = deflateRaw;
 exports.gzip = gzip;
 
-},{"./utils/common":69,"./utils/strings":70,"./zlib/deflate.js":74,"./zlib/messages":79,"./zlib/zstream":81}],68:[function(require,module,exports){
+},{"./utils/common":71,"./utils/strings":72,"./zlib/deflate.js":76,"./zlib/messages":81,"./zlib/zstream":83}],70:[function(require,module,exports){
 'use strict';
 
 
@@ -20598,7 +21004,7 @@ exports.inflate = inflate;
 exports.inflateRaw = inflateRaw;
 exports.ungzip  = inflate;
 
-},{"./utils/common":69,"./utils/strings":70,"./zlib/constants":72,"./zlib/gzheader":75,"./zlib/inflate.js":77,"./zlib/messages":79,"./zlib/zstream":81}],69:[function(require,module,exports){
+},{"./utils/common":71,"./utils/strings":72,"./zlib/constants":74,"./zlib/gzheader":77,"./zlib/inflate.js":79,"./zlib/messages":81,"./zlib/zstream":83}],71:[function(require,module,exports){
 'use strict';
 
 
@@ -20702,7 +21108,7 @@ exports.setTyped = function (on) {
 
 exports.setTyped(TYPED_OK);
 
-},{}],70:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 // String encode/decode helpers
 'use strict';
 
@@ -20889,7 +21295,7 @@ exports.utf8border = function(buf, max) {
   return (pos + _utf8len[buf[pos]] > max) ? pos : max;
 };
 
-},{"./common":69}],71:[function(require,module,exports){
+},{"./common":71}],73:[function(require,module,exports){
 'use strict';
 
 // Note: adler32 takes 12% for level 0 and 2% for level 6.
@@ -20923,7 +21329,7 @@ function adler32(adler, buf, len, pos) {
 
 module.exports = adler32;
 
-},{}],72:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 module.exports = {
 
   /* Allowed flush values; see deflate() and inflate() below for details */
@@ -20972,7 +21378,7 @@ module.exports = {
   //Z_NULL:                 null // Use -1 or null inline, depending on var type
 };
 
-},{}],73:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 'use strict';
 
 // Note: we can't get significant speed boost here.
@@ -21015,7 +21421,7 @@ function crc32(crc, buf, len, pos) {
 
 module.exports = crc32;
 
-},{}],74:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 'use strict';
 
 var utils   = require('../utils/common');
@@ -22782,7 +23188,7 @@ exports.deflatePrime = deflatePrime;
 exports.deflateTune = deflateTune;
 */
 
-},{"../utils/common":69,"./adler32":71,"./crc32":73,"./messages":79,"./trees":80}],75:[function(require,module,exports){
+},{"../utils/common":71,"./adler32":73,"./crc32":75,"./messages":81,"./trees":82}],77:[function(require,module,exports){
 'use strict';
 
 
@@ -22824,7 +23230,7 @@ function GZheader() {
 
 module.exports = GZheader;
 
-},{}],76:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 'use strict';
 
 // See state defs from inflate.js
@@ -23151,7 +23557,7 @@ module.exports = function inflate_fast(strm, start) {
   return;
 };
 
-},{}],77:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 'use strict';
 
 
@@ -24656,7 +25062,7 @@ exports.inflateSyncPoint = inflateSyncPoint;
 exports.inflateUndermine = inflateUndermine;
 */
 
-},{"../utils/common":69,"./adler32":71,"./crc32":73,"./inffast":76,"./inftrees":78}],78:[function(require,module,exports){
+},{"../utils/common":71,"./adler32":73,"./crc32":75,"./inffast":78,"./inftrees":80}],80:[function(require,module,exports){
 'use strict';
 
 
@@ -24985,7 +25391,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
   return 0;
 };
 
-},{"../utils/common":69}],79:[function(require,module,exports){
+},{"../utils/common":71}],81:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -25000,7 +25406,7 @@ module.exports = {
   '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
 };
 
-},{}],80:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 'use strict';
 
 
@@ -26201,7 +26607,7 @@ exports._tr_flush_block  = _tr_flush_block;
 exports._tr_tally = _tr_tally;
 exports._tr_align = _tr_align;
 
-},{"../utils/common":69}],81:[function(require,module,exports){
+},{"../utils/common":71}],83:[function(require,module,exports){
 'use strict';
 
 
@@ -26232,9 +26638,9 @@ function ZStream() {
 
 module.exports = ZStream;
 
-},{}],82:[function(require,module,exports){
+},{}],84:[function(require,module,exports){
 module.exports = require('./lib/retry');
-},{"./lib/retry":83}],83:[function(require,module,exports){
+},{"./lib/retry":85}],85:[function(require,module,exports){
 var RetryOperation = require('./retry_operation');
 
 exports.operation = function(options) {
@@ -26285,7 +26691,7 @@ exports._createTimeout = function(attempt, opts) {
 
   return timeout;
 };
-},{"./retry_operation":84}],84:[function(require,module,exports){
+},{"./retry_operation":86}],86:[function(require,module,exports){
 function RetryOperation(timeouts) {
   this._timeouts = timeouts;
   this._fn = null;
@@ -26395,7 +26801,7 @@ RetryOperation.prototype.mainError = function() {
 
   return mainError;
 };
-},{}],85:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 module.exports = function arrayEquals(array) {
     // if the other array is a falsy value, return
     if (!array)
@@ -26421,10 +26827,10 @@ module.exports = function arrayEquals(array) {
 }
 
 
-},{}],86:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 exports.Interop = require('./interop');
 
-},{"./interop":87}],87:[function(require,module,exports){
+},{"./interop":89}],89:[function(require,module,exports){
 "use strict";
 
 var transform = require('./transform');
@@ -27006,7 +27412,7 @@ Interop.prototype.toUnifiedPlan = function(desc) {
     //#endregion
 };
 
-},{"./array-equals":85,"./transform":88}],88:[function(require,module,exports){
+},{"./array-equals":87,"./transform":90}],90:[function(require,module,exports){
 var transform = require('sdp-transform');
 
 exports.write = function(session, opts) {
@@ -27105,460 +27511,7 @@ exports.parse = function(sdp) {
 };
 
 
-},{"sdp-transform":92}],89:[function(require,module,exports){
-var transform = require('sdp-transform');
-var transformUtils = require('./transform-utils');
-var parseSsrcs = transformUtils.parseSsrcs;
-var writeSsrcs = transformUtils.writeSsrcs;
-
-//region Constants
-
-var DEFAULT_NUM_OF_LAYERS = 3;
-
-//endregion
-
-//region Ctor
-
-function Simulcast(options) {
-
-    this.options = options ? options : {};
-
-    if (!this.options.numOfLayers) {
-        this.options.numOfLayers = DEFAULT_NUM_OF_LAYERS;
-    }
-
-    this.layers = [];
-}
-
-//endregion
-
-//region Stateless private utility functions
-
-/**
- * Returns a random integer between min (included) and max (excluded)
- * Using Math.round() gives a non-uniform distribution!
- * @returns {number}
- */
-function generateSSRC() {
-    var min = 0, max = 0xffffffff;
-    return Math.floor(Math.random() * (max - min)) + min;
-};
-
-function processVideo(session, action) {
-    if (session == null || !Array.isArray(session.media)) {
-        return;
-    }
-
-    session.media.forEach(function (mLine) {
-        if (mLine.type === 'video') {
-            action(mLine);
-        }
-    });
-}
-
-function validateDescription(desc)
-{
-    return desc && desc != null
-        && desc.type && desc.type != ''
-        && desc.sdp && desc.sdp != '';
-}
-
-function explodeRemoteSimulcast(mLine) {
-
-    if (!mLine || !Array.isArray(mLine.ssrcGroups)) {
-        return;
-    }
-
-    var sources = parseSsrcs(mLine);
-    var order = [];
-
-    // Find the SIM group and explode its sources.
-    var j = mLine.ssrcGroups.length;
-    while (j--) {
-
-        if (mLine.ssrcGroups[j].semantics !== 'SIM') {
-            continue;
-        }
-
-        var simulcastSsrcs = mLine.ssrcGroups[j].ssrcs.split(' ');
-
-        for (var i = 0; i < simulcastSsrcs.length; i++) {
-
-            var ssrc = simulcastSsrcs[i];
-            order.push(ssrc);
-
-            var parts = sources[ssrc].msid.split(' ');
-            sources[ssrc].msid = [parts[0], '/', i, ' ', parts[1], '/', i].join('');
-            sources[ssrc].cname = [sources[ssrc].cname, '/', i].join('');
-
-            // Remove all the groups that this SSRC participates in.
-            mLine.ssrcGroups.forEach(function (relatedGroup) {
-                if (relatedGroup.semantics === 'SIM') {
-                    return;
-                }
-
-                var relatedSsrcs = relatedGroup.ssrcs.split(' ');
-                if (relatedSsrcs.indexOf(ssrc) === -1) {
-                    return;
-                }
-
-                // Nuke all the related SSRCs.
-                relatedSsrcs.forEach(function (relatedSSRC) {
-                    sources[relatedSSRC].msid = sources[ssrc].msid;
-                    sources[relatedSSRC].cname = sources[ssrc].cname;
-                    if (relatedSSRC !== ssrc) {
-                        order.push(relatedSSRC);
-                    }
-                });
-
-                // Schedule the related group for nuking.
-            })
-        }
-
-        mLine.ssrcs = writeSsrcs(sources, order);
-        mLine.ssrcGroups.splice(j, 1);
-    };
-}
-
-function squeezeRemoteSimulcast(mLine) {
-
-    if (!mLine || !Array.isArray(mLine.ssrcGroups)) {
-        return;
-    }
-
-    var sources = parseSsrcs(mLine);
-
-    // Find the SIM group and nuke it.
-    mLine.ssrcGroups.some(function (simulcastGroup) {
-        if (simulcastGroup.semantics !== 'SIM') {
-            return false;
-        }
-
-        // Schedule the SIM group for nuking.
-        simulcastGroup.nuke = true;
-
-        var simulcastSsrcs = simulcastGroup.ssrcs.split(' ');
-
-        // Nuke all the higher layer SSRCs.
-        for (var i = 1; i < simulcastSsrcs.length; i++) {
-
-            var ssrc = simulcastSsrcs[i];
-            delete sources[ssrc];
-
-            // Remove all the groups that this SSRC participates in.
-            mLine.ssrcGroups.forEach(function (relatedGroup) {
-                if (relatedGroup.semantics === 'SIM') {
-                    return;
-                }
-
-                var relatedSsrcs = relatedGroup.ssrcs.split(' ');
-                if (relatedSsrcs.indexOf(ssrc) === -1) {
-                    return;
-                }
-
-                // Nuke all the related SSRCs.
-                relatedSsrcs.forEach(function (relatedSSRC) {
-                    delete sources[relatedSSRC];
-                });
-
-                // Schedule the related group for nuking.
-                relatedGroup.nuke = true;
-            })
-        }
-
-        return true;
-    });
-
-    mLine.ssrcs = writeSsrcs(sources);
-
-    // Nuke all the scheduled groups.
-    var i = mLine.ssrcGroups.length;
-    while (i--) {
-        if (mLine.ssrcGroups[i].nuke) {
-            mLine.ssrcGroups.splice(i, 1);
-        }
-    }
-}
-
-function removeGoogConference(mLine) {
-    if (!mLine || !Array.isArray(mLine.invalid)) {
-        return;
-    }
-
-    var i = mLine.invalid.length;
-    while (i--) {
-        if (mLine.invalid[i].value == 'x-google-flag:conference') {
-            mLine.invalid.splice(i, 1);
-        }
-    }
-}
-
-function assertGoogConference(mLine) {
-    if (!mLine) {
-        return;
-    }
-
-    if (!Array.isArray(mLine.invalid)) {
-        mLine.invalid = [];
-    }
-
-    if (!mLine.invalid.some(
-            function (i) { return i.value === 'x-google-flag:conference' })) {
-        mLine.invalid.push({'value': 'x-google-flag:conference'});
-    }
-}
-
-//endregion
-
-//region "Private" functions
-
-/**
- *
- * @param mLine
- * @private
- */
-Simulcast.prototype._maybeInitializeLayers = function(mLine) {
-
-    if (!mLine || mLine.type !== 'video') {
-        return;
-    }
-
-    var sources = parseSsrcs(mLine);
-
-    if (Object.keys(sources).length === 0) {
-
-        // no sources, disable simulcast.
-        if (this.layers.length !== 0) {
-            this.layers = [];
-        }
-
-        return;
-    }
-
-    // find the base layer (we'll reuse its msid and cname).
-    var baseLayerSSRC = Object.keys(sources)[0];
-    var baseLayer = sources[baseLayerSSRC];
-
-    // todo(gp) handle screen sharing.
-
-    // check if base CNAME has changed and reinitialise layers.
-    if (this.layers.length > 0
-        && sources[baseLayerSSRC].cname !== this.layers[0].cname) {
-        this.layers = [];
-    }
-
-    // (re)initialise layers
-    if (this.layers.length < 1) {
-
-        // first push the base layer.
-        this.layers.push({
-            ssrc: baseLayerSSRC,
-            msid: baseLayer.msid,
-            cname: baseLayer.cname
-        });
-
-        var rtx = false; // RFC 4588
-        if (Array.isArray(mLine.rtp)) {
-            rtx = mLine.rtp.some(
-                function (rtpmap) { return rtpmap.codec === 'rtx'; });
-        }
-
-        if (rtx) {
-            this.layers[0].rtx = generateSSRC();
-        }
-
-        // now push additional layers.
-        for (var i = 1; i < Math.max(1, this.options.numOfLayers); i++) {
-
-            var layer = { ssrc: generateSSRC() };
-            if (rtx) {
-                layer.rtx = generateSSRC();
-            }
-
-            this.layers.push(layer);
-        }
-    }
-};
-
-/**
- *
- * @param mLine
- * @private
- */
-Simulcast.prototype._restoreSimulcastView = function(mLine) {
-    if (mLine && mLine.type === 'video' && this.layers.length !== 0) {
-
-        var sources = {};
-
-        var msid = this.layers[0].msid;
-        var cname = this.layers[0].cname;
-        var simulcastSsrcs = [];
-        var ssrcGroups = [];
-
-        for (var i = 0; i < this.layers.length; i++) {
-            var layer = this.layers[i];
-
-            sources[layer.ssrc] = { msid: msid, cname: cname };
-            simulcastSsrcs.push(layer.ssrc);
-
-            if (layer.rtx) {
-
-                sources[layer.rtx] = {
-                    msid: msid,
-                    cname: cname
-                }
-
-                ssrcGroups.push({
-                    semantics: 'FID',
-                    ssrcs: [layer.ssrc, layer.rtx].join(' ')
-                });
-            }
-        }
-
-        ssrcGroups.push({
-            semantics: 'SIM',
-            ssrcs: simulcastSsrcs.join(' ')
-        });
-
-        mLine.ssrcGroups = ssrcGroups;
-        mLine.ssrcs = writeSsrcs(sources);
-    }
-}
-
-//endregion
-
-//region "Public" functions
-
-Simulcast.prototype.isSupported = function () {
-    return window.chrome;
-
-    // TODO this needs improvements. For example I doubt that Chrome in Android
-    // has simulcast support. Also, only recent versions of Chromium have native
-    // simulcast support.
-}
-
-/**
- *
- * @param desc
- * @returns {RTCSessionDescription}
- */
-Simulcast.prototype.mungeRemoteDescription = function (desc) {
-
-    if (!validateDescription(desc)) {
-        return desc;
-    }
-
-    var session = transform.parse(desc.sdp);
-
-    var self = this;
-    processVideo(session, function (mLine) {
-
-        // Handle simulcast reception.
-        if (self.options.explodeRemoteSimulcast) {
-            explodeRemoteSimulcast(mLine);
-        } else {
-            squeezeRemoteSimulcast(mLine);
-        }
-
-        // If native simulcast is enabled, we must append the x-goog-conference
-        // attribute to the SDP.
-        if (self.layers.length < 1) {
-            removeGoogConference(mLine);
-        } else {
-            assertGoogConference(mLine);
-        }
-    });
-
-    return new RTCSessionDescription({
-        type: desc.type,
-        sdp: transform.write(session)
-    });
-};
-
-/**
- *
- * @param desc
- * @returns {RTCSessionDescription}
- */
-Simulcast.prototype.mungeLocalDescription = function (desc) {
-
-    if (!validateDescription(desc) || !this.isSupported()) {
-        return desc;
-    }
-
-    var session = transform.parse(desc.sdp);
-
-    var self = this;
-    processVideo(session, function (mLine) {
-        // Initialize native simulcast layers, if not already done.
-        self._maybeInitializeLayers(mLine);
-
-        // Update the SDP with the simulcast layers.
-        self._restoreSimulcastView(mLine);
-    });
-
-    return new RTCSessionDescription({
-        type: desc.type,
-        sdp: transform.write(session)
-    });
-};
-
-//endregion
-
-module.exports = Simulcast;
-
-},{"./transform-utils":90,"sdp-transform":92}],90:[function(require,module,exports){
-exports.writeSsrcs = function(sources, order) {
-  var ssrcs = [];
-
-  // expand sources to ssrcs
-  if (typeof sources !== 'undefined' &&
-      Object.keys(sources).length !== 0) {
-
-    if (Array.isArray(order)) {
-      for (var i = 0; i < order.length; i++) {
-        var ssrc = order[i];
-        var source = sources[ssrc];
-        Object.keys(source).forEach(function (attribute) {
-          ssrcs.push({
-            id: ssrc,
-            attribute: attribute,
-            value: source[attribute]
-          });
-        });
-      }
-    } else {
-      Object.keys(sources).forEach(function (ssrc) {
-        var source = sources[ssrc];
-        Object.keys(source).forEach(function (attribute) {
-          ssrcs.push({
-            id: ssrc,
-            attribute: attribute,
-            value: source[attribute]
-          });
-        });
-      });
-    }
-  }
-
-  return ssrcs;
-};
-
-exports.parseSsrcs = function (mLine) {
-  var sources = {};
-  // group sources attributes by ssrc.
-  if (typeof mLine.ssrcs !== 'undefined' && Array.isArray(mLine.ssrcs)) {
-    mLine.ssrcs.forEach(function (ssrc) {
-      if (!sources[ssrc.id])
-        sources[ssrc.id] = {};
-      sources[ssrc.id][ssrc.attribute] = ssrc.value;
-    });
-  }
-  return sources;
-};
-
-
-},{}],91:[function(require,module,exports){
+},{"sdp-transform":92}],91:[function(require,module,exports){
 var grammar = module.exports = {
   v: [{
       name: 'version',
@@ -28029,13 +27982,482 @@ module.exports = function (session, opts) {
 };
 
 },{"./grammar":91}],95:[function(require,module,exports){
+var transform = require('sdp-transform');
+var transformUtils = require('./transform-utils');
+var parseSsrcs = transformUtils.parseSsrcs;
+var writeSsrcs = transformUtils.writeSsrcs;
+
+//region Constants
+
+var DEFAULT_NUM_OF_LAYERS = 3;
+
+//endregion
+
+//region Ctor
+
+function Simulcast(options) {
+
+    this.options = options ? options : {};
+
+    if (!this.options.numOfLayers) {
+        this.options.numOfLayers = DEFAULT_NUM_OF_LAYERS;
+    }
+
+    this.layers = [];
+}
+
+//endregion
+
+//region Stateless private utility functions
+
+/**
+ * Returns a random integer between min (included) and max (excluded)
+ * Using Math.round() gives a non-uniform distribution!
+ * @returns {number}
+ */
+function generateSSRC() {
+    var min = 0, max = 0xffffffff;
+    return Math.floor(Math.random() * (max - min)) + min;
+};
+
+function processVideo(session, action) {
+    if (session == null || !Array.isArray(session.media)) {
+        return;
+    }
+
+    session.media.forEach(function (mLine) {
+        if (mLine.type === 'video') {
+            action(mLine);
+        }
+    });
+}
+
+function validateDescription(desc)
+{
+    return desc && desc != null
+        && desc.type && desc.type != ''
+        && desc.sdp && desc.sdp != '';
+}
+
+function explodeRemoteSimulcast(mLine) {
+
+    if (!mLine || !Array.isArray(mLine.ssrcGroups)) {
+        return;
+    }
+
+    var sources = parseSsrcs(mLine);
+    var order = [];
+
+    // Find the SIM group and explode its sources.
+    var j = mLine.ssrcGroups.length;
+    while (j--) {
+
+        if (mLine.ssrcGroups[j].semantics !== 'SIM') {
+            continue;
+        }
+
+        var simulcastSsrcs = mLine.ssrcGroups[j].ssrcs.split(' ');
+
+        for (var i = 0; i < simulcastSsrcs.length; i++) {
+
+            var ssrc = simulcastSsrcs[i];
+            order.push(ssrc);
+
+            var parts = sources[ssrc].msid.split(' ');
+            sources[ssrc].msid = [parts[0], '/', i, ' ', parts[1], '/', i].join('');
+            sources[ssrc].cname = [sources[ssrc].cname, '/', i].join('');
+
+            // Remove all the groups that this SSRC participates in.
+            mLine.ssrcGroups.forEach(function (relatedGroup) {
+                if (relatedGroup.semantics === 'SIM') {
+                    return;
+                }
+
+                var relatedSsrcs = relatedGroup.ssrcs.split(' ');
+                if (relatedSsrcs.indexOf(ssrc) === -1) {
+                    return;
+                }
+
+                // Nuke all the related SSRCs.
+                relatedSsrcs.forEach(function (relatedSSRC) {
+                    sources[relatedSSRC].msid = sources[ssrc].msid;
+                    sources[relatedSSRC].cname = sources[ssrc].cname;
+                    if (relatedSSRC !== ssrc) {
+                        order.push(relatedSSRC);
+                    }
+                });
+
+                // Schedule the related group for nuking.
+            })
+        }
+
+        mLine.ssrcs = writeSsrcs(sources, order);
+        mLine.ssrcGroups.splice(j, 1);
+    };
+}
+
+function squeezeRemoteSimulcast(mLine) {
+
+    if (!mLine || !Array.isArray(mLine.ssrcGroups)) {
+        return;
+    }
+
+    var sources = parseSsrcs(mLine);
+
+    // Find the SIM group and nuke it.
+    mLine.ssrcGroups.some(function (simulcastGroup) {
+        if (simulcastGroup.semantics !== 'SIM') {
+            return false;
+        }
+
+        // Schedule the SIM group for nuking.
+        simulcastGroup.nuke = true;
+
+        var simulcastSsrcs = simulcastGroup.ssrcs.split(' ');
+
+        // Nuke all the higher layer SSRCs.
+        for (var i = 1; i < simulcastSsrcs.length; i++) {
+
+            var ssrc = simulcastSsrcs[i];
+            delete sources[ssrc];
+
+            // Remove all the groups that this SSRC participates in.
+            mLine.ssrcGroups.forEach(function (relatedGroup) {
+                if (relatedGroup.semantics === 'SIM') {
+                    return;
+                }
+
+                var relatedSsrcs = relatedGroup.ssrcs.split(' ');
+                if (relatedSsrcs.indexOf(ssrc) === -1) {
+                    return;
+                }
+
+                // Nuke all the related SSRCs.
+                relatedSsrcs.forEach(function (relatedSSRC) {
+                    delete sources[relatedSSRC];
+                });
+
+                // Schedule the related group for nuking.
+                relatedGroup.nuke = true;
+            })
+        }
+
+        return true;
+    });
+
+    mLine.ssrcs = writeSsrcs(sources);
+
+    // Nuke all the scheduled groups.
+    var i = mLine.ssrcGroups.length;
+    while (i--) {
+        if (mLine.ssrcGroups[i].nuke) {
+            mLine.ssrcGroups.splice(i, 1);
+        }
+    }
+}
+
+function removeGoogConference(mLine) {
+    if (!mLine || !Array.isArray(mLine.invalid)) {
+        return;
+    }
+
+    var i = mLine.invalid.length;
+    while (i--) {
+        if (mLine.invalid[i].value == 'x-google-flag:conference') {
+            mLine.invalid.splice(i, 1);
+        }
+    }
+}
+
+function assertGoogConference(mLine) {
+    if (!mLine) {
+        return;
+    }
+
+    if (!Array.isArray(mLine.invalid)) {
+        mLine.invalid = [];
+    }
+
+    if (!mLine.invalid.some(
+            function (i) { return i.value === 'x-google-flag:conference' })) {
+        mLine.invalid.push({'value': 'x-google-flag:conference'});
+    }
+}
+
+//endregion
+
+//region "Private" functions
+
+/**
+ *
+ * @param mLine
+ * @private
+ */
+Simulcast.prototype._maybeInitializeLayers = function(mLine) {
+
+    if (!mLine || mLine.type !== 'video') {
+        return;
+    }
+
+    var sources = parseSsrcs(mLine);
+
+    if (Object.keys(sources).length === 0) {
+
+        // no sources, disable simulcast.
+        if (this.layers.length !== 0) {
+            this.layers = [];
+        }
+
+        return;
+    }
+
+    // find the base layer (we'll reuse its msid and cname).
+    var baseLayerSSRC = Object.keys(sources)[0];
+    var baseLayer = sources[baseLayerSSRC];
+
+    // todo(gp) handle screen sharing.
+
+    // check if base CNAME has changed and reinitialise layers.
+    if (this.layers.length > 0
+        && sources[baseLayerSSRC].cname !== this.layers[0].cname) {
+        this.layers = [];
+    }
+
+    // (re)initialise layers
+    if (this.layers.length < 1) {
+
+        // first push the base layer.
+        this.layers.push({
+            ssrc: baseLayerSSRC,
+            msid: baseLayer.msid,
+            cname: baseLayer.cname
+        });
+
+        var rtx = false; // RFC 4588
+        if (Array.isArray(mLine.rtp)) {
+            rtx = mLine.rtp.some(
+                function (rtpmap) { return rtpmap.codec === 'rtx'; });
+        }
+
+        if (rtx) {
+            this.layers[0].rtx = generateSSRC();
+        }
+
+        // now push additional layers.
+        for (var i = 1; i < Math.max(1, this.options.numOfLayers); i++) {
+
+            var layer = { ssrc: generateSSRC() };
+            if (rtx) {
+                layer.rtx = generateSSRC();
+            }
+
+            this.layers.push(layer);
+        }
+    }
+};
+
+/**
+ *
+ * @param mLine
+ * @private
+ */
+Simulcast.prototype._restoreSimulcastView = function(mLine) {
+    if (mLine && mLine.type === 'video' && this.layers.length !== 0) {
+
+        var sources = {};
+
+        var msid = this.layers[0].msid;
+        var cname = this.layers[0].cname;
+        var simulcastSsrcs = [];
+        var ssrcGroups = [];
+
+        for (var i = 0; i < this.layers.length; i++) {
+            var layer = this.layers[i];
+
+            sources[layer.ssrc] = { msid: msid, cname: cname };
+            simulcastSsrcs.push(layer.ssrc);
+
+            if (layer.rtx) {
+
+                sources[layer.rtx] = {
+                    msid: msid,
+                    cname: cname
+                }
+
+                ssrcGroups.push({
+                    semantics: 'FID',
+                    ssrcs: [layer.ssrc, layer.rtx].join(' ')
+                });
+            }
+        }
+
+        ssrcGroups.push({
+            semantics: 'SIM',
+            ssrcs: simulcastSsrcs.join(' ')
+        });
+
+        mLine.ssrcGroups = ssrcGroups;
+        mLine.ssrcs = writeSsrcs(sources);
+    }
+}
+
+//endregion
+
+//region "Public" functions
+
+Simulcast.prototype.isSupported = function () {
+    return window.chrome;
+
+    // TODO this needs improvements. For example I doubt that Chrome in Android
+    // has simulcast support. Also, only recent versions of Chromium have native
+    // simulcast support.
+}
+
+/**
+ *
+ * @param desc
+ * @returns {RTCSessionDescription}
+ */
+Simulcast.prototype.mungeRemoteDescription = function (desc) {
+
+    if (!validateDescription(desc)) {
+        return desc;
+    }
+
+    var session = transform.parse(desc.sdp);
+
+    var self = this;
+    processVideo(session, function (mLine) {
+
+        // Handle simulcast reception.
+        if (self.options.explodeRemoteSimulcast) {
+            explodeRemoteSimulcast(mLine);
+        } else {
+            squeezeRemoteSimulcast(mLine);
+        }
+
+        // If native simulcast is enabled, we must append the x-goog-conference
+        // attribute to the SDP.
+        if (self.layers.length < 1) {
+            removeGoogConference(mLine);
+        } else {
+            assertGoogConference(mLine);
+        }
+    });
+
+    return new RTCSessionDescription({
+        type: desc.type,
+        sdp: transform.write(session)
+    });
+};
+
+/**
+ *
+ * @param desc
+ * @returns {RTCSessionDescription}
+ */
+Simulcast.prototype.mungeLocalDescription = function (desc) {
+
+    if (!validateDescription(desc) || !this.isSupported()) {
+        return desc;
+    }
+
+    var session = transform.parse(desc.sdp);
+
+    var self = this;
+    processVideo(session, function (mLine) {
+        // Initialize native simulcast layers, if not already done.
+        self._maybeInitializeLayers(mLine);
+
+        // Update the SDP with the simulcast layers.
+        self._restoreSimulcastView(mLine);
+    });
+
+    return new RTCSessionDescription({
+        type: desc.type,
+        sdp: transform.write(session)
+    });
+};
+
+//endregion
+
+module.exports = Simulcast;
+
+},{"./transform-utils":96,"sdp-transform":98}],96:[function(require,module,exports){
+exports.writeSsrcs = function(sources, order) {
+  var ssrcs = [];
+
+  // expand sources to ssrcs
+  if (typeof sources !== 'undefined' &&
+      Object.keys(sources).length !== 0) {
+
+    if (Array.isArray(order)) {
+      for (var i = 0; i < order.length; i++) {
+        var ssrc = order[i];
+        var source = sources[ssrc];
+        Object.keys(source).forEach(function (attribute) {
+          ssrcs.push({
+            id: ssrc,
+            attribute: attribute,
+            value: source[attribute]
+          });
+        });
+      }
+    } else {
+      Object.keys(sources).forEach(function (ssrc) {
+        var source = sources[ssrc];
+        Object.keys(source).forEach(function (attribute) {
+          ssrcs.push({
+            id: ssrc,
+            attribute: attribute,
+            value: source[attribute]
+          });
+        });
+      });
+    }
+  }
+
+  return ssrcs;
+};
+
+exports.parseSsrcs = function (mLine) {
+  var sources = {};
+  // group sources attributes by ssrc.
+  if (typeof mLine.ssrcs !== 'undefined' && Array.isArray(mLine.ssrcs)) {
+    mLine.ssrcs.forEach(function (ssrc) {
+      if (!sources[ssrc.id])
+        sources[ssrc.id] = {};
+      sources[ssrc.id][ssrc.attribute] = ssrc.value;
+    });
+  }
+  return sources;
+};
+
+
+},{}],97:[function(require,module,exports){
+arguments[4][91][0].apply(exports,arguments)
+},{"dup":91}],98:[function(require,module,exports){
+arguments[4][92][0].apply(exports,arguments)
+},{"./parser":99,"./writer":100,"dup":92}],99:[function(require,module,exports){
+arguments[4][93][0].apply(exports,arguments)
+},{"./grammar":97,"dup":93}],100:[function(require,module,exports){
+arguments[4][94][0].apply(exports,arguments)
+},{"./grammar":97,"dup":94}],101:[function(require,module,exports){
+arguments[4][91][0].apply(exports,arguments)
+},{"dup":91}],102:[function(require,module,exports){
+arguments[4][92][0].apply(exports,arguments)
+},{"./parser":103,"./writer":104,"dup":92}],103:[function(require,module,exports){
+arguments[4][93][0].apply(exports,arguments)
+},{"./grammar":101,"dup":93}],104:[function(require,module,exports){
+arguments[4][94][0].apply(exports,arguments)
+},{"./grammar":101,"dup":94}],105:[function(require,module,exports){
 var MediaStreamType = {
     VIDEO_TYPE: "Video",
 
     AUDIO_TYPE: "Audio"
 };
 module.exports = MediaStreamType;
-},{}],96:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 var RTCBrowserType = {
     RTC_BROWSER_CHROME: "rtc_browser.chrome",
 
@@ -28043,7 +28465,7 @@ var RTCBrowserType = {
 };
 
 module.exports = RTCBrowserType;
-},{}],97:[function(require,module,exports){
+},{}],107:[function(require,module,exports){
 var RTCEvents = {
     LASTN_CHANGED: "rtc.lastn_changed",
     DOMINANTSPEAKER_CHANGED: "rtc.dominantspeaker_changed",
@@ -28052,7 +28474,7 @@ var RTCEvents = {
 };
 
 module.exports = RTCEvents;
-},{}],98:[function(require,module,exports){
+},{}],108:[function(require,module,exports){
 var Resolutions = {
     "1080": {
         width: 1920,
@@ -28106,7 +28528,7 @@ var Resolutions = {
     }
 };
 module.exports = Resolutions;
-},{}],99:[function(require,module,exports){
+},{}],109:[function(require,module,exports){
 var StreamEventTypes = {
     EVENT_TYPE_LOCAL_CREATED: "stream.local_created",
 
@@ -28122,14 +28544,14 @@ var StreamEventTypes = {
 };
 
 module.exports = StreamEventTypes;
-},{}],100:[function(require,module,exports){
+},{}],110:[function(require,module,exports){
 var UIEvents = {
     NICKNAME_CHANGED: "UI.nickname_changed",
     SELECTED_ENDPOINT: "UI.selected_endpoint",
     PINNED_ENDPOINT: "UI.pinned_endpoint"
 };
 module.exports = UIEvents;
-},{}],101:[function(require,module,exports){
+},{}],111:[function(require,module,exports){
 var AuthenticationEvents = {
     /**
      * Event callback arguments:
@@ -28143,7 +28565,7 @@ var AuthenticationEvents = {
 };
 module.exports = AuthenticationEvents;
 
-},{}],102:[function(require,module,exports){
+},{}],112:[function(require,module,exports){
 var CQEvents = {
     LOCALSTATS_UPDATED: "cq.localstats_updated",
     REMOTESTATS_UPDATED: "cq.remotestats_updated",
@@ -28151,7 +28573,7 @@ var CQEvents = {
 };
 
 module.exports = CQEvents;
-},{}],103:[function(require,module,exports){
+},{}],113:[function(require,module,exports){
 var DesktopSharingEventTypes = {
     INIT: "ds.init",
 
@@ -28161,14 +28583,14 @@ var DesktopSharingEventTypes = {
 };
 
 module.exports = DesktopSharingEventTypes;
-},{}],104:[function(require,module,exports){
+},{}],114:[function(require,module,exports){
 var Events = {
     DTMF_SUPPORT_CHANGED: "members.dtmf_support_changed"
 };
 
 module.exports = Events;
 
-},{}],105:[function(require,module,exports){
+},{}],115:[function(require,module,exports){
 module.exports = {
     getLanguages : function () {
         var languages = [];
@@ -28185,7 +28607,7 @@ module.exports = {
     TR: "tr",
     FR: "fr"
 }
-},{}],106:[function(require,module,exports){
+},{}],116:[function(require,module,exports){
 var XMPPEvents = {
     CONNECTION_FAILED: "xmpp.connection.failed",
     CONFERENCE_CREATED: "xmpp.conferenceCreated.jingle",
@@ -28221,396 +28643,5 @@ var XMPPEvents = {
     START_MUTED: "xmpp.start_muted"
 };
 module.exports = XMPPEvents;
-},{}],107:[function(require,module,exports){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-function EventEmitter() {
-  this._events = this._events || {};
-  this._maxListeners = this._maxListeners || undefined;
-}
-module.exports = EventEmitter;
-
-// Backwards-compat with node 0.10.x
-EventEmitter.EventEmitter = EventEmitter;
-
-EventEmitter.prototype._events = undefined;
-EventEmitter.prototype._maxListeners = undefined;
-
-// By default EventEmitters will print a warning if more than 10 listeners are
-// added to it. This is a useful default which helps finding memory leaks.
-EventEmitter.defaultMaxListeners = 10;
-
-// Obviously not all Emitters should be limited to 10. This function allows
-// that to be increased. Set to zero for unlimited.
-EventEmitter.prototype.setMaxListeners = function(n) {
-  if (!isNumber(n) || n < 0 || isNaN(n))
-    throw TypeError('n must be a positive number');
-  this._maxListeners = n;
-  return this;
-};
-
-EventEmitter.prototype.emit = function(type) {
-  var er, handler, len, args, i, listeners;
-
-  if (!this._events)
-    this._events = {};
-
-  // If there is no 'error' event listener then throw.
-  if (type === 'error') {
-    if (!this._events.error ||
-        (isObject(this._events.error) && !this._events.error.length)) {
-      er = arguments[1];
-      if (er instanceof Error) {
-        throw er; // Unhandled 'error' event
-      }
-      throw TypeError('Uncaught, unspecified "error" event.');
-    }
-  }
-
-  handler = this._events[type];
-
-  if (isUndefined(handler))
-    return false;
-
-  if (isFunction(handler)) {
-    switch (arguments.length) {
-      // fast cases
-      case 1:
-        handler.call(this);
-        break;
-      case 2:
-        handler.call(this, arguments[1]);
-        break;
-      case 3:
-        handler.call(this, arguments[1], arguments[2]);
-        break;
-      // slower
-      default:
-        len = arguments.length;
-        args = new Array(len - 1);
-        for (i = 1; i < len; i++)
-          args[i - 1] = arguments[i];
-        handler.apply(this, args);
-    }
-  } else if (isObject(handler)) {
-    len = arguments.length;
-    args = new Array(len - 1);
-    for (i = 1; i < len; i++)
-      args[i - 1] = arguments[i];
-
-    listeners = handler.slice();
-    len = listeners.length;
-    for (i = 0; i < len; i++)
-      listeners[i].apply(this, args);
-  }
-
-  return true;
-};
-
-EventEmitter.prototype.addListener = function(type, listener) {
-  var m;
-
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  if (!this._events)
-    this._events = {};
-
-  // To avoid recursion in the case that type === "newListener"! Before
-  // adding it to the listeners, first emit "newListener".
-  if (this._events.newListener)
-    this.emit('newListener', type,
-              isFunction(listener.listener) ?
-              listener.listener : listener);
-
-  if (!this._events[type])
-    // Optimize the case of one listener. Don't need the extra array object.
-    this._events[type] = listener;
-  else if (isObject(this._events[type]))
-    // If we've already got an array, just append.
-    this._events[type].push(listener);
-  else
-    // Adding the second element, need to change to array.
-    this._events[type] = [this._events[type], listener];
-
-  // Check for listener leak
-  if (isObject(this._events[type]) && !this._events[type].warned) {
-    var m;
-    if (!isUndefined(this._maxListeners)) {
-      m = this._maxListeners;
-    } else {
-      m = EventEmitter.defaultMaxListeners;
-    }
-
-    if (m && m > 0 && this._events[type].length > m) {
-      this._events[type].warned = true;
-      console.error('(node) warning: possible EventEmitter memory ' +
-                    'leak detected. %d listeners added. ' +
-                    'Use emitter.setMaxListeners() to increase limit.',
-                    this._events[type].length);
-      if (typeof console.trace === 'function') {
-        // not supported in IE 10
-        console.trace();
-      }
-    }
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-EventEmitter.prototype.once = function(type, listener) {
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  var fired = false;
-
-  function g() {
-    this.removeListener(type, g);
-
-    if (!fired) {
-      fired = true;
-      listener.apply(this, arguments);
-    }
-  }
-
-  g.listener = listener;
-  this.on(type, g);
-
-  return this;
-};
-
-// emits a 'removeListener' event iff the listener was removed
-EventEmitter.prototype.removeListener = function(type, listener) {
-  var list, position, length, i;
-
-  if (!isFunction(listener))
-    throw TypeError('listener must be a function');
-
-  if (!this._events || !this._events[type])
-    return this;
-
-  list = this._events[type];
-  length = list.length;
-  position = -1;
-
-  if (list === listener ||
-      (isFunction(list.listener) && list.listener === listener)) {
-    delete this._events[type];
-    if (this._events.removeListener)
-      this.emit('removeListener', type, listener);
-
-  } else if (isObject(list)) {
-    for (i = length; i-- > 0;) {
-      if (list[i] === listener ||
-          (list[i].listener && list[i].listener === listener)) {
-        position = i;
-        break;
-      }
-    }
-
-    if (position < 0)
-      return this;
-
-    if (list.length === 1) {
-      list.length = 0;
-      delete this._events[type];
-    } else {
-      list.splice(position, 1);
-    }
-
-    if (this._events.removeListener)
-      this.emit('removeListener', type, listener);
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.removeAllListeners = function(type) {
-  var key, listeners;
-
-  if (!this._events)
-    return this;
-
-  // not listening for removeListener, no need to emit
-  if (!this._events.removeListener) {
-    if (arguments.length === 0)
-      this._events = {};
-    else if (this._events[type])
-      delete this._events[type];
-    return this;
-  }
-
-  // emit removeListener for all listeners on all events
-  if (arguments.length === 0) {
-    for (key in this._events) {
-      if (key === 'removeListener') continue;
-      this.removeAllListeners(key);
-    }
-    this.removeAllListeners('removeListener');
-    this._events = {};
-    return this;
-  }
-
-  listeners = this._events[type];
-
-  if (isFunction(listeners)) {
-    this.removeListener(type, listeners);
-  } else {
-    // LIFO order
-    while (listeners.length)
-      this.removeListener(type, listeners[listeners.length - 1]);
-  }
-  delete this._events[type];
-
-  return this;
-};
-
-EventEmitter.prototype.listeners = function(type) {
-  var ret;
-  if (!this._events || !this._events[type])
-    ret = [];
-  else if (isFunction(this._events[type]))
-    ret = [this._events[type]];
-  else
-    ret = this._events[type].slice();
-  return ret;
-};
-
-EventEmitter.listenerCount = function(emitter, type) {
-  var ret;
-  if (!emitter._events || !emitter._events[type])
-    ret = 0;
-  else if (isFunction(emitter._events[type]))
-    ret = 1;
-  else
-    ret = emitter._events[type].length;
-  return ret;
-};
-
-function isFunction(arg) {
-  return typeof arg === 'function';
-}
-
-function isNumber(arg) {
-  return typeof arg === 'number';
-}
-
-function isObject(arg) {
-  return typeof arg === 'object' && arg !== null;
-}
-
-function isUndefined(arg) {
-  return arg === void 0;
-}
-
-},{}],108:[function(require,module,exports){
-// shim for using process in browser
-
-var process = module.exports = {};
-
-process.nextTick = (function () {
-    var canSetImmediate = typeof window !== 'undefined'
-    && window.setImmediate;
-    var canMutationObserver = typeof window !== 'undefined'
-    && window.MutationObserver;
-    var canPost = typeof window !== 'undefined'
-    && window.postMessage && window.addEventListener
-    ;
-
-    if (canSetImmediate) {
-        return function (f) { return window.setImmediate(f) };
-    }
-
-    var queue = [];
-
-    if (canMutationObserver) {
-        var hiddenDiv = document.createElement("div");
-        var observer = new MutationObserver(function () {
-            var queueList = queue.slice();
-            queue.length = 0;
-            queueList.forEach(function (fn) {
-                fn();
-            });
-        });
-
-        observer.observe(hiddenDiv, { attributes: true });
-
-        return function nextTick(fn) {
-            if (!queue.length) {
-                hiddenDiv.setAttribute('yes', 'no');
-            }
-            queue.push(fn);
-        };
-    }
-
-    if (canPost) {
-        window.addEventListener('message', function (ev) {
-            var source = ev.source;
-            if ((source === window || source === null) && ev.data === 'process-tick') {
-                ev.stopPropagation();
-                if (queue.length > 0) {
-                    var fn = queue.shift();
-                    fn();
-                }
-            }
-        }, true);
-
-        return function nextTick(fn) {
-            queue.push(fn);
-            window.postMessage('process-tick', '*');
-        };
-    }
-
-    return function nextTick(fn) {
-        setTimeout(fn, 0);
-    };
-})();
-
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-// TODO(shtylman)
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-
 },{}]},{},[1])(1)
 });
