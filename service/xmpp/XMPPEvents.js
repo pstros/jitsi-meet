@@ -1,7 +1,6 @@
 var XMPPEvents = {
     CONNECTION_FAILED: "xmpp.connection.failed",
     CONFERENCE_CREATED: "xmpp.conferenceCreated.jingle",
-    CALL_TERMINATED: "xmpp.callterminated.jingle",
     CALL_INCOMING: "xmpp.callincoming.jingle",
     DISPOSE_CONFERENCE: "xmpp.dispose_conference",
     GRACEFUL_SHUTDOWN: "xmpp.graceful_shutdown",
@@ -41,6 +40,10 @@ var XMPPEvents = {
     ROOM_CONNECT_ERROR: 'xmpp.room_connect_error',
     MUTE_AUDIO_CHANGED: 'xmpp.mute_audio_changed',
     // xmpp is connected and obtained user media
-    READY_TO_JOIN: 'xmpp.ready_to_join'
+    READY_TO_JOIN: 'xmpp.ready_to_join',
+    PEERCONNECTION_READY: "xmpp.peerconnection_ready",
+    CONFERENCE_SETUP_FAILED: "xmpp.conference_setup_failed",
+    AUDIO_MUTED: "xmpp.audio_muted",
+    VIDEO_MUTED: "xmpp.video_muted"
 };
 module.exports = XMPPEvents;

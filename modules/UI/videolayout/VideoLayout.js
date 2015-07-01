@@ -271,10 +271,10 @@ var VideoLayout = (function (my) {
         // current dominant, focused speaker or prezi playing or update it to
         // the current dominant speaker.
         if ((!focusedVideoResourceJid &&
-            !VideoLayout.getDominantSpeakerResourceJid() &&
+            !currentDominantSpeaker &&
             !require("../prezi/Prezi").isPresentationVisible()) ||
             (resourceJid &&
-                VideoLayout.getDominantSpeakerResourceJid() === resourceJid)) {
+                currentDominantSpeaker === resourceJid)) {
             LargeVideo.updateLargeVideo(resourceJid, true);
         }
     }
@@ -328,7 +328,7 @@ var VideoLayout = (function (my) {
      * @param {boolean} isMuted
      */
     my.showLocalAudioIndicator = function(isMuted) {
-        localVideoThumbnail.showAudioIndicator(isMuted.toString());
+        localVideoThumbnail.showAudioIndicator(isMuted);
     };
 
     /**
@@ -392,29 +392,6 @@ var VideoLayout = (function (my) {
     };
 
     /**
-     * Enables the dominant speaker UI.
-     *
-     * @param resourceJid the jid indicating the video element to
-     * activate/deactivate
-     * @param isEnable indicates if the dominant speaker should be enabled or
-     * disabled
-     */
-    my.enableDominantSpeaker = function(resourceJid, isEnable) {
-
-        if (resourceJid
-                === APP.xmpp.myResource()) {
-            localVideoThumbnail.enableDominantSpeaker(isEnable);
-        }
-        else {
-            remoteVideos[resourceJid].enableDominantSpeaker(isEnable);
-        }
-
-
-        Avatar.showUserAvatar(
-            APP.xmpp.findJidFromResource(resourceJid));
-    };
-
-    /**
      * Calculates the thumbnail size.
      *
      * @param videoSpaceWidth the width of the video space
@@ -446,13 +423,6 @@ var VideoLayout = (function (my) {
 
        return [availableWidth, availableHeight];
    };
-
-    /**
-     * Returns the current dominant speaker resource jid.
-     */
-    my.getDominantSpeakerResourceJid = function () {
-        return currentDominantSpeaker;
-    };
 
     /**
      * Returns the corresponding resource jid to the given peer container
@@ -516,7 +486,7 @@ var VideoLayout = (function (my) {
     /**
      * On audio muted event.
      */
-    $(document).bind('audiomuted.muc', function (event, jid, isMuted) {
+    my.onAudioMute = function (jid, isMuted) {
         var resourceJid = Strophe.getResourceFromJid(jid);
         if (resourceJid === APP.xmpp.myResource()) {
             localVideoThumbnail.showAudioIndicator(isMuted);
@@ -529,24 +499,22 @@ var VideoLayout = (function (my) {
         }
 
 
-    });
+    };
 
     /**
      * On video muted event.
      */
-    $(document).bind('videomuted.muc', function (event, jid, value) {
-        var isMuted = (value === "true");
-        if(jid !== APP.xmpp.myJid() && !APP.RTC.muteRemoteVideoStream(jid, isMuted))
+    my.onVideoMute = function (jid, value) {
+        if(jid !== APP.xmpp.myJid() && !APP.RTC.muteRemoteVideoStream(jid, value))
             return;
 
-        Avatar.showUserAvatar(jid, isMuted);
         if (jid === APP.xmpp.myJid()) {
-            localVideoThumbnail.showVideoIndicator(isMuted);
+            localVideoThumbnail.showVideoIndicator(value);
         } else {
             VideoLayout.ensurePeerContainerExists(jid);
-            remoteVideos[Strophe.getResourceFromJid(jid)].showVideoIndicator(isMuted);
+            remoteVideos[Strophe.getResourceFromJid(jid)].showVideoIndicator(value);
         }
-    });
+    };
 
     /**
      * Display name changed.
@@ -719,7 +687,7 @@ var VideoLayout = (function (my) {
                     }
                     remoteVideos[resourceJid].waitForRemoteVideo(sel, mediaStream.ssrc, mediaStream.stream);
                 }
-            })
+            });
         }
 
         // The endpoint that was being shown in the large video has dropped out
@@ -808,7 +776,7 @@ var VideoLayout = (function (my) {
     my.onStatsStop = function () {
         for(var video in remoteVideos)
         {
-            video.hideIndicator();
+            remoteVideos[video].hideIndicator();
         }
         localVideoThumbnail.hideIndicator();
     };
@@ -821,11 +789,11 @@ var VideoLayout = (function (my) {
             console.info("Focused video owner has left the conference");
             focusedVideoResourceJid = null;
         }
-    }
+    };
     
     my.onVideoTypeChanged = function (jid) {
-        LargeVideo.onVideoTypeChanged();
-    }
+        LargeVideo.onVideoTypeChanged(jid);
+    };
 
     my.showMore = function (jid) {
         if(APP.xmpp.myJid = jid)
@@ -837,11 +805,11 @@ var VideoLayout = (function (my) {
             remoteVideos[Strophe.getResourceFromJid(jid)].connectionIndicator.showMore();
         }
 
-    }
+    };
 
     my.addPreziContainer = function (id) {
         return RemoteVideo.createContainer(id);
-    }
+    };
 
     my.setLargeVideoVisible = function (isVisible) {
         LargeVideo.setLargeVideoVisible(isVisible);
@@ -850,12 +818,10 @@ var VideoLayout = (function (my) {
             var smallVideo = VideoLayout.getSmallVideo(focusedVideoResourceJid);
             if(smallVideo)
                 smallVideo.focus(false);
-            Avatar.showUserAvatar(
-                APP.xmpp.findJidFromResource(focusedVideoResourceJid));
+            smallVideo.showAvatar();
             focusedVideoResourceJid = null;
-
         }
-    }
+    };
 
 
     /**
@@ -879,7 +845,16 @@ var VideoLayout = (function (my) {
                 return null;
             return remoteVideos[resourceJid];
         }
-    }
+    };
+
+    my.userAvatarChanged = function(resourceJid, thumbUrl)
+    {
+        var smallVideo = VideoLayout.getSmallVideo(resourceJid);
+        if(smallVideo)
+            smallVideo.avatarChanged(thumbUrl);
+        LargeVideo.updateAvatar(resourceJid, thumbUrl);
+    };
+
     return my;
 }(VideoLayout || {}));
 

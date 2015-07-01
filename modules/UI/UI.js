@@ -241,6 +241,8 @@ function registerListeners() {
             VideoLayout.setDeviceAvailabilityIcons(resource, devices);
         });
 
+    APP.xmpp.addListener(XMPPEvents.AUDIO_MUTED, VideoLayout.onAudioMute);
+    APP.xmpp.addListener(XMPPEvents.VIDEO_MUTED, VideoLayout.onVideoMute);
     APP.members.addListener(MemberEvents.DTMF_SUPPORT_CHANGED,
                             onDtmfSupportChanged);
     APP.xmpp.addListener(XMPPEvents.START_MUTED_SETTING_CHANGED, function (audio, video) {
@@ -250,7 +252,7 @@ function registerListeners() {
         UI.setInitialMuteFromFocus(audio, video);
     });
 
-    APP.xmpp.addListener(XMPPEvents.JINGLE_FATAL, function (session, error) {
+    APP.xmpp.addListener(XMPPEvents.CONFERENCE_SETUP_FAILED, function (session, error) {
         UI.messageHandler.showError("dialog.sorry",
             "dialog.internalError");
     });
@@ -262,9 +264,6 @@ function registerListeners() {
     APP.xmpp.addListener(XMPPEvents.SET_REMOTE_DESCRIPTION_ERROR, function() {
         messageHandler.showError("dialog.error",
             "dialog.SRDFailure");
-    });
-    APP.xmpp.addListener(XMPPEvents.CREATE_ANSWER_ERROR, function() {
-        messageHandler.showError();
     });
     APP.xmpp.addListener(XMPPEvents.CREATE_ANSWER_ERROR, function() {
         messageHandler.showError();
@@ -856,6 +855,12 @@ UI.setVideoMuteButtonsState = function (mute) {
     }
 }
 
+UI.userAvatarChanged = function (resourceJid, thumbUrl, contactListUrl) {
+    VideoLayout.userAvatarChanged(resourceJid, thumbUrl);
+    ContactList.userAvatarChanged(resourceJid, contactListUrl);
+    if(resourceJid === APP.xmpp.myResource())
+        SettingsMenu.changeAvatar(thumbUrl);
+}
 
 UI.setVideoMute = setVideoMute;
 

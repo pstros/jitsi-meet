@@ -143,13 +143,15 @@ module.exports = function(XMPP, eventEmitter) {
             // Parse audio info tag.
             var audioMuted = $(pres).find('>audiomuted');
             if (audioMuted.length) {
-                $(document).trigger('audiomuted.muc', [from, audioMuted.text()]);
+                eventEmitter.emit(XMPPEvents.AUDIO_MUTED,
+                    from, (audioMuted.text() === "true"));
             }
 
             // Parse video info tag.
             var videoMuted = $(pres).find('>videomuted');
             if (videoMuted.length) {
-                $(document).trigger('videomuted.muc', [from, videoMuted.text()]);
+                eventEmitter.emit(XMPPEvents.VIDEO_MUTED,
+                    from, (videoMuted.text() === "true"));
             }
 
             var startMuted = $(pres).find('>startmuted');
