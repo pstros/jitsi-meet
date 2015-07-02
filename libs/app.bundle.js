@@ -76,15 +76,19 @@ var XMPPEvents = require("../../service/xmpp/XMPPEvents");
  *              filmStrip: toggleFilmStrip
  *          }}
  */
-var commands =
-{
-    displayName: APP.UI.inputDisplayNameHandler,
-    muteAudio: APP.UI.toggleAudio,
-    muteVideo: APP.UI.toggleVideo,
-    toggleFilmStrip: APP.UI.toggleFilmStrip,
-    toggleChat: APP.UI.toggleChat,
-    toggleContactList: APP.UI.toggleContactList
-};
+var commands = {};
+
+function initCommands() {
+    commands =
+    {
+        displayName: APP.UI.inputDisplayNameHandler,
+        muteAudio: APP.UI.toggleAudio,
+        muteVideo: APP.UI.toggleVideo,
+        toggleFilmStrip: APP.UI.toggleFilmStrip,
+        toggleChat: APP.UI.toggleChat,
+        toggleContactList: APP.UI.toggleContactList
+    };
+}
 
 
 /**
@@ -237,6 +241,7 @@ var API = {
      * is initialized.
      */
     init: function () {
+        initCommands();
         if (window.addEventListener)
         {
             window.addEventListener('message',
@@ -1564,6 +1569,51 @@ var eventEmitter = new EventEmitter();
 var roomName = null;
 
 
+function promptDisplayName() {
+    var message = '<h2 data-i18n="dialog.displayNameRequired">';
+    message += APP.translation.translateString(
+        "dialog.displayNameRequired");
+    message += '</h2>' +
+        '<input name="displayName" type="text" data-i18n=' +
+        '"[placeholder]defaultNickname" placeholder="' +
+        APP.translation.translateString(
+            "defaultNickname", {name: "Jane Pink"}) +
+        '" autofocus>';
+
+    var buttonTxt
+        = APP.translation.generateTranslatonHTML("dialog.Ok");
+    var buttons = [];
+    buttons.push({title: buttonTxt, value: "ok"});
+
+    messageHandler.openDialog(null, message,
+        true,
+        buttons,
+        function (e, v, m, f) {
+            if (v == "ok") {
+                var displayName = f.displayName;
+                if (displayName) {
+                    VideoLayout.inputDisplayNameHandler(displayName);
+                    return true;
+                }
+            }
+            e.preventDefault();
+        },
+        function () {
+            var form  = $.prompt.getPrompt();
+            var input = form.find("input[name='displayName']");
+            var button = form.find("button");
+            button.attr("disabled", "disabled");
+            input.keyup(function () {
+                if(!input.val())
+                    button.attr("disabled", "disabled");
+                else
+                    button.removeAttr("disabled");
+            });
+        }
+    );
+}
+
+
 function notifyForInitialMute()
 {
     messageHandler.notify(null, "notify.mutedTitle", "connected",
@@ -1948,16 +1998,14 @@ UI.start = function (init) {
 
     document.getElementById('largeVideo').volume = 0;
 
-    if (!$('#settings').is(':visible')) {
-        console.log('init');
-        init();
-    } else {
-        loginInfo.onsubmit = function (e) {
-            if (e.preventDefault) e.preventDefault();
-            $('#settings').hide();
-            init();
-        };
+    if(config.requireDisplayName) {
+        var currentSettings = Settings.getSettings();
+        if (!currentSettings.displayName) {
+            promptDisplayName();
+        }
     }
+
+    init();
 
     toastr.options = {
         "closeButton": true,
@@ -9884,40 +9932,43 @@ module.exports = {
 
 },{"../../service/desktopsharing/DesktopSharingEventTypes":114,"events":66}],43:[function(require,module,exports){
 //maps keycode to character, id of popover for given function and function
-var shortcuts = {
-    67: {
-        character: "C",
-        id: "toggleChatPopover",
-        function: APP.UI.toggleChat
-    },
-    70: {
-        character: "F",
-        id: "filmstripPopover",
-        function: APP.UI.toggleFilmStrip
-    },
-    77: {
-        character: "M",
-        id: "mutePopover",
-        function: APP.UI.toggleAudio
-    },
-    84: {
-        character: "T",
-        function: function() {
-            if(!APP.RTC.localAudio.isMuted()) {
-                APP.UI.toggleAudio();
+function initShortcutHandlers() {
+    var shortcuts = {
+        67: {
+            character: "C",
+            id: "toggleChatPopover",
+            function: APP.UI.toggleChat
+        },
+        70: {
+            character: "F",
+            id: "filmstripPopover",
+            function: APP.UI.toggleFilmStrip
+        },
+        77: {
+            character: "M",
+            id: "mutePopover",
+            function: APP.UI.toggleAudio
+        },
+        84: {
+            character: "T",
+            function: function() {
+                if(!APP.RTC.localAudio.isMuted()) {
+                    APP.UI.toggleAudio();
+                }
             }
+        },
+        86: {
+            character: "V",
+            id: "toggleVideoPopover",
+            function: APP.UI.toggleVideo
         }
-    },
-    86: {
-        character: "V",
-        id: "toggleVideoPopover",
-        function: APP.UI.toggleVideo
-    }
-};
+    };
+}
 
 
 var KeyboardShortcut = {
     init: function () {
+        initShortcutHandlers();
         window.onkeyup = function(e) {
             var keycode = e.which;
             if(!($(":focus").is("input[type=text]") ||
