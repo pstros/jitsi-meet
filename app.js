@@ -23,7 +23,7 @@ function init() {
 
     APP.desktopsharing.init();
     APP.RTC.start();
-    APP.xmpp.start();
+    APP.xmpp.start(APP.settings.getJid(), null);
     APP.statistics.start();
     APP.connectionquality.init();
     APP.keyboardshortcut.init();
