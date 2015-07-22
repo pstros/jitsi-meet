@@ -249,19 +249,12 @@ var XMPP = {
      * @type {boolean}
      */
     forceMuted: false,
-    start: function () {
+    start: function (jid, password) {
         setupEvents();
         initStrophePlugins();
         registerListeners();
         Moderator.init(this, eventEmitter);
-        var configDomain = config.hosts.anonymousdomain || config.hosts.domain;
-        // Force authenticated domain if room is appended with '?login=true'
-        if (config.hosts.anonymousdomain &&
-            window.location.search.indexOf("login=true") !== -1) {
-            configDomain = config.hosts.domain;
-        }
-        var jid = configDomain || window.location.hostname;
-        connect(jid, null);
+        connect(jid, password);
     },
     createConnection: function () {
         var bosh = config.bosh || '/http-bind';
