@@ -65,7 +65,7 @@ var Settings = {
           window.location.search.indexOf("login=true") !== -1) {
           configDomain = config.hosts.domain;
       }
-      var jid = configDomain || window.location.hostname;
+      return configDomain || window.location.hostname;
     }
 
 };
