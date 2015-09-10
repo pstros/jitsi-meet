@@ -198,6 +198,16 @@ function registerListeners() {
     APP.desktopsharing.addListener(
         Toolbar.changeDesktopSharingButtonState,
         DesktopSharingEventTypes.SWITCHING_DONE);
+    APP.desktopsharing.addListener(
+        DesktopSharingEventTypes.EXTENSTION_VERSION_ERROR,
+        messageHandler.showError("dialog.error",
+            "dialog.detectext")
+        );
+    APP.desktopsharing.addListener(
+        DesktopSharingEventTypes.EXTENSION_INSTALLATION_ERROR,
+        messageHandler.showError("dialog.error",
+                    "dialog.failtoinstall")
+        );
     APP.connectionquality.addListener(CQEvents.LOCALSTATS_UPDATED,
         VideoLayout.updateLocalConnectionStats);
     APP.connectionquality.addListener(CQEvents.REMOTESTATS_UPDATED,

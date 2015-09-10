@@ -109,8 +109,6 @@ function isUpdateRequired(minVersion, extVersion)
     {
         eventEmitter.emit(DesktopSharingEventTypes.EXTENSION_VERSION_ERROR);
         console.error("Failed to parse extension version", e);
-        APP.UI.messageHandler.showError("dialog.error",
-            "dialog.detectext");
         return true;
     }
 }
@@ -197,8 +195,6 @@ function obtainScreenFromExtension(streamCallback, failCallback) {
                 eventEmitter.emit(DesktopSharingEventTypes.EXTENSION_INSTALLATION_ERROR);
                 console.log("Failed to install the extension", arg);
                 failCallback(arg);
-                APP.UI.messageHandler.showError("dialog.error",
-                    "dialog.failtoinstall");
             }
         );
     }
