@@ -107,6 +107,7 @@ function isUpdateRequired(minVersion, extVersion)
     }
     catch (e)
     {
+        eventEmitter.emit(DesktopSharingEventTypes.EXTENSION_VERSION_ERROR);
         console.error("Failed to parse extension version", e);
         APP.UI.messageHandler.showError("dialog.error",
             "dialog.detectext");
@@ -193,6 +194,7 @@ function obtainScreenFromExtension(streamCallback, failCallback) {
                 }, 500);
             },
             function (arg) {
+                eventEmitter.emit(DesktopSharingEventTypes.EXTENSION_INSTALLATION_ERROR);
                 console.log("Failed to install the extension", arg);
                 failCallback(arg);
                 APP.UI.messageHandler.showError("dialog.error",
@@ -270,6 +272,7 @@ function initChromeExtension() {
 }
 
 function getVideoStreamFailed(error) {
+    eventEmitter.emit(DesktopSharingEventTypes.VIDEOSTREAM_ERROR);
     console.error("Failed to obtain the stream to switch to", error);
     switchInProgress = false;
     isUsingScreenStream = false;
@@ -277,6 +280,7 @@ function getVideoStreamFailed(error) {
 }
 
 function getDesktopStreamFailed(error) {
+    eventEmitter.emit(DesktopSharingEventTypes.EXTENSION_STREAM_ERROR);
     console.error("Failed to obtain the stream to switch to", error);
     switchInProgress = false;
 }
