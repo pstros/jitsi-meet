@@ -177,7 +177,9 @@ var LocalSSRCReplacement = {
         // with old SSRC
         if (localVideoSSRC) {
             var newSdp = new SDP(localDescription.sdp);
-            if (newSdp.media[1].indexOf("a=ssrc:") !== -1 &&
+            if (newSdp.hasOwnProperty('media') &&
+                newSdp.media.length > 1 &&
+                newSdp.media[1].indexOf("a=ssrc:") !== -1 &&
                 !newSdp.containsSSRC(localVideoSSRC)) {
                 // Get new video SSRC
                 var map = newSdp.getMediaSsrcMap();
