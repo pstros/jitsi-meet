@@ -35,7 +35,7 @@ var externalAuthEnabled = false;
 // Sip gateway can be enabled by configuring Jigasi host in config.js or
 // it will be enabled automatically if focus detects the component through
 // service discovery.
-var sipGatewayEnabled = config.hosts.call_control !== undefined;
+var sipGatewayEnabled = false;
 
 var eventEmitter = null;
 
@@ -64,6 +64,7 @@ var Moderator = {
     init: function (xmpp, emitter) {
         this.xmppService = xmpp;
         eventEmitter = emitter;
+        sipGatewayEnabled = config.hosts.call_control !== undefined;
 
         // Message listener that talks to POPUP window
         function listener(event) {
@@ -97,7 +98,7 @@ var Moderator = {
             location.reload();
         }
     },
-    
+
     setFocusUserJid: function (focusJid) {
         if (!focusUserJid) {
             focusUserJid = focusJid;
@@ -234,7 +235,7 @@ var Moderator = {
 
         eventEmitter.emit(AuthenticationEvents.IDENTITY_UPDATED,
             authenticationEnabled, authIdentity);
-    
+
         // Check if focus has auto-detected Jigasi component(this will be also
         // included if we have passed our host from the config)
         if ($(resultIq).find(
@@ -242,7 +243,7 @@ var Moderator = {
             '[name=\'sipGatewayEnabled\'][value=\'true\']').length) {
             sipGatewayEnabled = true;
         }
-    
+
         console.info("Sip gateway enabled: " + sipGatewayEnabled);
     },
 
