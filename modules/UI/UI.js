@@ -199,14 +199,16 @@ function registerListeners() {
         Toolbar.changeDesktopSharingButtonState,
         DesktopSharingEventTypes.SWITCHING_DONE);
     APP.desktopsharing.addListener(
-        DesktopSharingEventTypes.EXTENSTION_VERSION_ERROR,
-        messageHandler.showError("dialog.error",
-            "dialog.detectext")
+        function() {
+          messageHandler.showError("dialog.error",
+              "dialog.detectext");
+        },DesktopSharingEventTypes.EXTENSION_VERSION_ERROR
         );
     APP.desktopsharing.addListener(
-        DesktopSharingEventTypes.EXTENSION_INSTALLATION_ERROR,
-        messageHandler.showError("dialog.error",
-                    "dialog.failtoinstall")
+        function() {
+          messageHandler.showError("dialog.error",
+              "dialog.failtoinstall");
+        } ,DesktopSharingEventTypes.EXTENSION_INSTALLATION_ERROR
         );
     APP.connectionquality.addListener(CQEvents.LOCALSTATS_UPDATED,
         VideoLayout.updateLocalConnectionStats);
