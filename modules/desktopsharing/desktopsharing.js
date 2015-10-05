@@ -324,17 +324,20 @@ module.exports = {
      *          and enabled.
      */
     isDesktopSharingEnabled: function () { return !!obtainDesktopStream; },
-    
+
     init: function () {
         APP.RTC.addListener(RTCEvents.RTC_READY, onWebRtcReady);
     },
-
+    destroy: function() {
+        APP.RTC.removeListener(RTCEvents.RTC_READY, onWebRtcReady);
+        eventEmitter.removeAllListeners();
+    },
     addListener: function (listener, type)
     {
         eventEmitter.on(type, listener);
     },
 
-    removeListener: function (listener, type) {
+    removeListener: function (type, listener) {
         eventEmitter.removeListener(type, listener);
     },
 

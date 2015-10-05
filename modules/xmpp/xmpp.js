@@ -272,6 +272,9 @@ var XMPP = {
         Moderator.init(this, eventEmitter);
         connect(jid, password);
     },
+    stop: function () {
+        eventEmitter.removeAllListeners();
+    },
     createConnection: function () {
         var bosh = config.bosh || '/http-bind';
 

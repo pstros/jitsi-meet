@@ -59,6 +59,9 @@ var RTC = {
     addListener: function (type, listener) {
         eventEmitter.on(type, listener);
     },
+    removeListener: function(type, listener){
+        eventEmitter.removeListener(type, listener);
+    },
     removeStreamListener: function (listener, eventType) {
         if(!(eventType instanceof StreamEventTypes))
             throw "Illegal argument";
@@ -132,8 +135,15 @@ var RTC = {
         return RTCBrowserType.isTemasysPluginUsed() ? 'object' : 'video';
     },
     dispose: function() {
+        APP.UI.removeListener(UIEvents.SELECTED_ENDPOINT,
+            DataChannels.handleSelectedEndpointEvent);
+        APP.UI.removeListener(UIEvents.PINNED_ENDPOINT,
+            DataChannels.handlePinnedEndpointEvent);
         if (this.rtcUtils) {
             this.rtcUtils = null;
+        }
+        if (eventEmitter) {
+            eventEmitter.removeAllListeners();
         }
     },
     stop:  function () {
@@ -205,7 +215,7 @@ var RTC = {
                 APP.xmpp.setVideoMute(false, function(mute) {
                     eventEmitter.emit(RTCEvents.VIDEO_MUTE, mute);
                 });
-                
+
                 callback();
             };
         }
