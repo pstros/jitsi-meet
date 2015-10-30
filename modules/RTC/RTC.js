@@ -98,6 +98,14 @@ var RTC = {
             }
         }
     },
+    stopLocalStream: function(stream) {
+			var tracks = stream.getTracks();
+			for( var idx in tracks ) {
+				var track = tracks[idx];
+				if( track.stop && typeof track.stop === 'funciton' )
+					track.stop();
+			}
+  	},
     createRemoteStream: function (data, sid, thessrc) {
         var remoteStream = new MediaStream(data, sid, thessrc,
             RTCBrowserType.getBrowserType(), eventEmitter);
@@ -145,6 +153,7 @@ var RTC = {
         // Remove all local streams on cleanup
 				while (this.localStreams.length > 0) {
 					var stream = this.localStreams[0];
+					this.stopLocalStream(stream.getOriginalStream());
 					this.removeLocalStream(stream.getOriginalStream());
 				}
         if (eventEmitter) {
