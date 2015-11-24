@@ -84,6 +84,8 @@ JingleSessionPC.prototype.doInitialize = function () {
     this.hadturncandidate = false;
     this.lasticecandidate = false;
     this.isreconnect = false;
+    //Make sure we clear out stored ssrcs from previous peer connections
+    SSRCReplacement.init();
 
     this.peerconnection = new TraceablePeerConnection(
             this.connection.jingle.ice_config,
