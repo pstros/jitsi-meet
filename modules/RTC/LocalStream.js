@@ -78,7 +78,7 @@ LocalStream.prototype.setMute = function (mute)
     } else {
         if (mute) {
             APP.xmpp.removeStream(this.stream);
-            this.stream.stop();
+            APP.RTC.stopMediaStream(this.stream);
             this.eventEmitter.emit(eventType, true);
         } else {
             var self = this;
