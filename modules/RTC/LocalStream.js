@@ -13,8 +13,7 @@ function implementOnEndedHandling(stream) {
     var originalStop = stream.stop;
     stream.stop = function () {
         originalStop.apply(stream);
-        if (!stream.ended) {
-            stream.ended = true;
+        if (stream.isActive()) {
             stream.onended();
         }
     };
@@ -106,7 +105,7 @@ LocalStream.prototype.isMuted = function () {
     if (this.isAudioStream()) {
         tracks = this.stream.getAudioTracks();
     } else {
-        if (this.stream.ended)
+        if (!this.stream.active)
             return true;
         tracks = this.stream.getVideoTracks();
     }
@@ -121,4 +120,10 @@ LocalStream.prototype.getId = function () {
     return this.stream.getTracks()[0].id;
 };
 
+LocalStream.prototype.isActive = function () {
+    if((typeof this.stream.active !== "undefined"))
+              return this.stream.active;
+        else
+                  return true;
+};
 module.exports = LocalStream;
