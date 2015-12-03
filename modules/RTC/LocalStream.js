@@ -9,7 +9,8 @@ var RTCBrowserType = require("./RTCBrowserType");
  * @param stream original WebRTC stream object to which 'onended' handling
  *               will be added.
  */
-function implementOnEndedHandling(stream) {
+function implementOnEndedHandling(localStream) {
+    var stream = localStream.getOriginalStream();
     var originalStop = stream.stop;
     stream.stop = function () {
         originalStop.apply(stream);
@@ -42,7 +43,7 @@ function LocalStream(stream, type, eventEmitter, videoType, isGUMStream) {
         self.streamEnded();
     };
     if (RTCBrowserType.isFirefox()) {
-        implementOnEndedHandling(this.stream);
+        implementOnEndedHandling(this);
     }
 }
 
@@ -105,7 +106,7 @@ LocalStream.prototype.isMuted = function () {
     if (this.isAudioStream()) {
         tracks = this.stream.getAudioTracks();
     } else {
-        if (!this.stream.active)
+        if (!this.isActive())
             return true;
         tracks = this.stream.getVideoTracks();
     }
