@@ -14,7 +14,7 @@ function implementOnEndedHandling(localStream) {
     var originalStop = stream.stop;
     stream.stop = function () {
         originalStop.apply(stream);
-        if (stream.isActive()) {
+        if (localStream.isActive()) {
             stream.onended();
         }
     };
