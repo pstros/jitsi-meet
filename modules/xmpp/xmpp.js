@@ -319,6 +319,9 @@ var XMPP = {
         }
         connect(jid, password);
     },
+    stop: function () {
+        eventEmitter.removeAllListeners();
+    },
     createConnection: function () {
         var bosh = config.bosh || '/http-bind';
         // adds the room name used to the bosh connection
@@ -560,6 +563,9 @@ var XMPP = {
     getPrezi: function () {
         return connection.emuc.getPrezi(this.myJid());
     },
+    getRoomJid: function () {
+      return connection.emuc.roomjid;
+    },
     removePreziFromPresence: function () {
         connection.emuc.removePreziFromPresence();
         connection.emuc.sendPresence();
@@ -623,6 +629,12 @@ var XMPP = {
     },
     filter_special_chars: function (text) {
         return SDPUtil.filter_special_chars(text);
+    },
+    createConferenceIQ: function (roomName) {
+        return Moderator.createConferenceIq(roomName);
+    },
+    parseSessionId: function (resultIq) {
+        return Moderator.parseSessionId(resultIq);
     }
 };
 

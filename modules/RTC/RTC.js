@@ -62,6 +62,9 @@ var RTC = {
     addListener: function (type, listener) {
         eventEmitter.on(type, listener);
     },
+    removeListener: function(type, listener){
+        eventEmitter.removeListener(type, listener);
+    },
     removeStreamListener: function (listener, eventType) {
         if(!(eventType instanceof StreamEventTypes))
             throw "Illegal argument";
@@ -125,10 +128,12 @@ var RTC = {
     },
     getUserMediaWithConstraints:function(um, success_callback,
                                          failure_callback, resolution,
-                                         bandwidth, fps, desktopStream)
+                                         bandwidth, minFps, maxFps,
+                                         desktopStream)
     {
         return this.rtcUtils.getUserMediaWithConstraints(um, success_callback,
-            failure_callback, resolution, bandwidth, fps, desktopStream);
+            failure_callback, resolution, bandwidth, minFps, maxFps,
+            desktopStream);
     },
     attachMediaStream:  function (elSelector, stream) {
         this.rtcUtils.attachMediaStream(elSelector, stream);
@@ -146,8 +151,24 @@ var RTC = {
         return RTCBrowserType.isTemasysPluginUsed() ? 'object' : 'video';
     },
     dispose: function() {
+        APP.UI.removeListener(UIEvents.SELECTED_ENDPOINT,
+            DataChannels.handleSelectedEndpointEvent);
+        APP.UI.removeListener(UIEvents.PINNED_ENDPOINT,
+            DataChannels.handlePinnedEndpointEvent);
         if (this.rtcUtils) {
             this.rtcUtils = null;
+        }
+        // Remove all local streams on cleanup
+				while (this.localAudio.length > 0) {
+					this.stopMediaStream(this.localAudio[0]
+            .getOriginalStream());
+				}
+        while (this.localVideo.length > 0) {
+          this.stopMediaStream(this.localVideo[0]
+            .getOriginalStream());
+        }
+        if (eventEmitter) {
+            eventEmitter.removeAllListeners();
         }
     },
     stop:  function () {

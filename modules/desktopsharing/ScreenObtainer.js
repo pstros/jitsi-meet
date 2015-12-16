@@ -1,5 +1,6 @@
 /* global config, APP, chrome, $, alert */
 /* jshint -W003 */
+var EventEmitter = require("events");
 var RTCBrowserType = require("../RTC/RTCBrowserType");
 var AdapterJS = require("../RTC/adapter.screenshare");
 var DesktopSharingEventTypes
@@ -182,9 +183,9 @@ function isUpdateRequired(minVersion, extVersion) {
         return false;
     }
     catch (e) {
+        this.eventEmitter
+          .emit(DesktopSharingEventTypes.EXTENSION_VERSION_ERROR);
         console.error("Failed to parse extension version", e);
-        APP.UI.messageHandler.showError("dialog.error",
-            "dialog.detectext");
         return true;
     }
 }
@@ -246,7 +247,7 @@ function doGetStreamFromExtension(streamCallback, failCallback) {
                         streamCallback(stream);
                     },
                     failCallback,
-                    null, null, null,
+                    null, null, null, null,
                     response.streamId);
             } else {
                 failCallback("Extension failed to get the stream");
@@ -269,6 +270,7 @@ function obtainScreenFromExtension(streamCallback, failCallback) {
                 'Changes will take effect after next Chrome restart.');
         }
 
+        var _this = this;
         chrome.webstore.install(
             getWebStoreInstallUrl(),
             function (arg) {
@@ -280,10 +282,10 @@ function obtainScreenFromExtension(streamCallback, failCallback) {
                 }, 500);
             },
             function (arg) {
+                _this.eventEmitter
+                  .emit(DesktopSharingEventTypes.EXTENSION_INSTALLATION_ERROR);
                 console.log("Failed to install the extension", arg);
                 failCallback(arg);
-                APP.UI.messageHandler.showError("dialog.error",
-                    "dialog.failtoinstall");
             }
         );
     }

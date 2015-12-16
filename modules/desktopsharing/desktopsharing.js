@@ -39,6 +39,7 @@ function newStreamCreated(stream) {
 }
 
 function getVideoStreamFailed(error) {
+    eventEmitter.emit(DesktopSharingEventTypes.VIDEOSTREAM_ERROR);
     console.error("Failed to obtain the stream to switch to", error);
     switchInProgress = false;
     isUsingScreenStream = false;
@@ -46,6 +47,7 @@ function getVideoStreamFailed(error) {
 }
 
 function getDesktopStreamFailed(error) {
+    eventEmitter.emit(DesktopSharingEventTypes.EXTENSION_STREAM_ERROR);
     console.error("Failed to obtain the stream to switch to", error);
     switchInProgress = false;
 }
@@ -56,6 +58,11 @@ function onEndedHandler(stream) {
     }
 
     APP.RTC.removeMediaStreamInactiveHandler(stream, onEndedHandler);
+}
+
+function initScreenObtainer() {
+    screenObtainer.init(eventEmitter);
+    eventEmitter.emit(DesktopSharingEventTypes.INIT);
 }
 
 module.exports = {
@@ -70,17 +77,18 @@ module.exports = {
     isDesktopSharingEnabled: function () {
         return screenObtainer.isSupported();
     },
-    
+
     init: function () {
         // Called when RTC finishes initialization
-        APP.RTC.addListener(RTCEvents.RTC_READY,
-            function() {
-                screenObtainer.init(eventEmitter);
-                eventEmitter.emit(DesktopSharingEventTypes.INIT);
-            });
+        APP.RTC.addListener(RTCEvents.RTC_READY, initScreenObtainer);
     },
 
-    addListener: function (type, listener) {
+    destroy: function() {
+        APP.RTC.removeListener(RTCEvents.RTC_READY, initScreenObtainer);
+        eventEmitter.removeAllListeners();
+    },
+    addListener: function (type, listener)
+    {
         eventEmitter.on(type, listener);
     },
 

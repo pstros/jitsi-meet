@@ -140,6 +140,15 @@ function generateRecvonlySSRC() {
 
 var LocalSSRCReplacement = {
     /**
+     * Initialize the module
+     */
+    init: function() {
+        localVideoSSRC = null;
+        localRecvOnlySSRC = null;
+        localRecvOnlyCName = null;
+    },
+
+    /**
      * Method must be called before 'session-initiate' or 'session-invite' is
      * sent. Scans the IQ for local video SSRC and stores it if detected.
      *
@@ -177,7 +186,9 @@ var LocalSSRCReplacement = {
         // with old SSRC
         if (localVideoSSRC) {
             var newSdp = new SDP(localDescription.sdp);
-            if (newSdp.media[1].indexOf("a=ssrc:") !== -1 &&
+            if (newSdp.hasOwnProperty('media') &&
+                newSdp.media.length > 1 &&
+                newSdp.media[1].indexOf("a=ssrc:") !== -1 &&
                 !newSdp.containsSSRC(localVideoSSRC)) {
                 // Get new video SSRC
                 var map = newSdp.getMediaSsrcMap();
