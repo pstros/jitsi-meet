@@ -167,6 +167,8 @@ var RTC = {
             DataChannels.handleSelectedEndpointEvent);
         APP.UI.addListener(UIEvents.PINNED_ENDPOINT,
             DataChannels.handlePinnedEndpointEvent);
+        APP.UI.addListener(UIEvents.LASTN_CHANGED,
+            DataChannels.handleLastNValueEvent);
 
         // In case of IE we continue from 'onReady' callback
         // passed to RTCUtils constructor. It will be invoked by Temasys plugin

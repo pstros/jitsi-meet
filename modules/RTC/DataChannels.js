@@ -152,10 +152,13 @@ var DataChannels = {
     },
 
     handleSelectedEndpointEvent: function (userResource) {
-        onXXXEndpointChanged("selected", userResource);
+        onXXXPropertyChanged("selected", "Endpoint", userResource);
     },
     handlePinnedEndpointEvent: function (userResource) {
-        onXXXEndpointChanged("pinned", userResource);
+        onXXXPropertyChanged("pinned", "Endpoint", userResource);
+    },
+    handleLastNValueEvent: function (userResource) {
+        onXXXPropertyChanged("lastn", "Value", userResource);
     },
 
     some: function (callback, thisArg) {
@@ -172,13 +175,13 @@ var DataChannels = {
 
 /**
  * Notifies Videobridge about a change in the value of a specific
- * endpoint-related property such as selected endpoint and pinnned endpoint.
+ * property such as selected endpoint, pinnned endpoint, or lastn.
  *
- * @param xxx the name of the endpoint-related property whose value changed
- * @param userResource the new value of the endpoint-related property after the
+ * @param xxx the name of the property whose value changed
+ * @param userResource the new value of the property after the
  * change
  */
-function onXXXEndpointChanged(xxx, userResource) {
+function onXXXPropertyChanged(xxx, propertyType, userResource) {
     // Derive the correct words from xxx such as selected and Selected, pinned
     // and Pinned.
     var head = xxx.charAt(0);
@@ -197,8 +200,8 @@ function onXXXEndpointChanged(xxx, userResource) {
 
             var jsonObject = {};
 
-            jsonObject.colibriClass = (upper + 'EndpointChangedEvent');
-            jsonObject[lower + "Endpoint"]
+            jsonObject.colibriClass = (upper + propertyType + 'ChangedEvent');
+            jsonObject[lower + propertyType]
                 = (userResource ? userResource : null);
             dataChannel.send(JSON.stringify(jsonObject));
 
